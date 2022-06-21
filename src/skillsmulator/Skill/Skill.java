@@ -12,15 +12,21 @@ public class Skill {
     private String title;
     protected int maxLevel;
     private int cost;
-    
+    boolean active;
 
 
     public Skill(String title, int maxLevel, int cost) {
+        if(maxLevel <= 0)
+            throw new IllegalArgumentException("Skill max level should be more than 0");
         this.title = title;
         this.maxLevel = maxLevel;
         this.cost = cost;
-        if(maxLevel <= 0)
-            throw new IllegalArgumentException("Skill max level should be more than 0");
+        active = true;
+    }
+    
+    public void setActive(boolean active)
+    {
+        this.active = active;
     }
     
     public int getMax()
@@ -35,6 +41,13 @@ public class Skill {
     
     public int getCost()
     {
-        return cost;
+        if(active)
+            return cost;
+        else
+            return 0;
+    }
+
+    public boolean isActive() {
+        return active;
     }
 }

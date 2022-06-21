@@ -12,10 +12,17 @@ import skillsmulator.Expectation;
  */
 public abstract class AttackSkill extends Skill{
 
+    
     public AttackSkill(String title, int maxLevel, int cost) {
         super(title, maxLevel, cost);
+        
     }
     
+    public void evalExpectation(Expectation exp, int level)
+    {
+        if(active)
+            editExpectation(exp, level);
+    }
     
-    abstract public void editExpectation(Expectation exp, int level);
+    abstract protected void editExpectation(Expectation exp, int level);
 }
