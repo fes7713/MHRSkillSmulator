@@ -4,8 +4,6 @@
  */
 package skillsmulator.Skill;
 
-import skillsmulator.Expectation;
-
 /**
  *
  * @author fes77
@@ -39,10 +37,4 @@ public class Skill {
     {
         return cost;
     }
-    
-    
-    public void editExpectation(Expectation exp, int level)
-    {
-        
-    };
 }

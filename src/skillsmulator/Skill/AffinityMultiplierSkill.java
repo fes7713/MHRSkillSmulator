@@ -10,7 +10,7 @@ import skillsmulator.Expectation;
  *
  * @author fes77
  */
-public class AffinityMultiplierSkill extends Skill implements AffinityMultiplier{
+public class AffinityMultiplierSkill extends AttackSkill implements AffinityMultiplier{
     private double[] multiplierSequence;
 
     public AffinityMultiplierSkill(String title, int cost, double[] multiplierSequence) {
@@ -25,7 +25,6 @@ public class AffinityMultiplierSkill extends Skill implements AffinityMultiplier
 
     @Override
     public void editExpectation(Expectation exp, int level) {
-        super.editExpectation(exp, level);
         exp.setAffinityMultiplier(getAffinityMultiplier(level));
     }
     

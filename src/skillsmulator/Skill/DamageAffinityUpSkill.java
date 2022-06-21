@@ -10,7 +10,7 @@ import skillsmulator.Expectation;
  *
  * @author fes77
  */
-public class DamageAffinityUpSkill extends Skill implements DamageUp, AffinityUp{
+public class DamageAffinityUpSkill extends AttackSkill implements DamageUp, AffinityUp{
     private final int[] damageSequence;
     private final int[] affinitySequence;
 
@@ -37,7 +37,6 @@ public class DamageAffinityUpSkill extends Skill implements DamageUp, AffinityUp
 
     @Override
     public void editExpectation(Expectation exp, int level) {
-        super.editExpectation(exp, level);
         exp.addDamageIncrease(getDamageUp(level));
         exp.addAffinity(getAffinityUp(level));
     }

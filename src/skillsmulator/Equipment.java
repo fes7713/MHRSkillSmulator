@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 import skillsmulator.Skill.AffinityMultiplierSkill;
 import skillsmulator.Skill.AffinitySkill;
+import skillsmulator.Skill.AttackSkill;
 import skillsmulator.Skill.DamageUpMultiplePreSkill;
 import skillsmulator.Skill.DamageUpSkill;
 import skillsmulator.Skill.Skill;
@@ -62,9 +63,7 @@ public class Equipment {
                 skillMap.put(skill, chestSkills.get(skill));
             }
         }
-        
-        
-        
+
         return skillMap;
     }
     
@@ -116,10 +115,17 @@ public class Equipment {
 //        
 //        return (newDamage + damageIncrease) * (100 - affinity) / 100 + (newDamage + damageIncrease) * affinity / 100 * 1.25;
         Expectation exp = new Expectation(weapon);
-        for(Skill skill: skills.keySet())
-        {
-            skill.editExpectation(exp, skills.get(skill));
-        }
+        
+        skills.keySet()
+                .stream()
+                .filter(AttackSkill.class::isInstance)
+                .map(AttackSkill.class::cast)
+                .forEach(skill -> skill.editExpectation(exp, skills.get(skill)));
+        
+//        for(Skill skill: skills.keySet())
+//        {
+//            skill.editExpectation(exp, skills.get(skill));
+//        }
         return exp.getExpectation();
     }
             

@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import skillsmulator.Skill.AffinitySkill;
 import skillsmulator.Skill.AffinityUp;
+import skillsmulator.Skill.AttackSkill;
 import skillsmulator.Skill.DamageUp;
 import skillsmulator.Skill.DamageUpMultiplePreSkill;
 import skillsmulator.Skill.DamageUpSkill;
@@ -26,6 +27,7 @@ public class Armor {
     private int slot3;
 
     private int score;
+    
     private List<Armor> similar;
     private int totalDamage;
     private int totalAffinity;
@@ -40,6 +42,7 @@ public class Armor {
         this.slot3 = slot3;
         totalDamage = findTotalDamage();
         totalAffinity = findTotalAffinity();
+        updateScore();
         
     }
     
@@ -57,6 +60,18 @@ public class Armor {
     @Override
     public String toString() {
         return title;
+    }
+    
+    public void updateScore()
+    {
+        score = slot1 * 1 + slot2 * 2 + slot3 * 3;
+        score += skills
+                .keySet()
+                .stream()
+                .filter(AttackSkill.class::isInstance)
+                .map(AttackSkill.class::cast)
+                .map(skill -> skill.getCost() * skills.get(skill))
+                .reduce(0, Integer::sum);
     }
     
     public void addSkill(Skill skill, int level)
