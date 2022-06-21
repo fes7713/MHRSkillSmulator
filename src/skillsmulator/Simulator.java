@@ -4,6 +4,8 @@
  */
 package skillsmulator;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -20,12 +22,141 @@ import skillsmulator.Skill.Skill;
  */
 public class Simulator {
     
-    List<Armor>hemls;
+    List<Armor>helms;
     List<Armor>chests;
+    
+    List<Armor>selectedHelms;
+    List<Armor>selectedChests;
     
     Set<Skill>skills;
     Set<Skill>activeSkills;
     
+    public static final Skill attackBoost = 
+            new DamageUpMultiplePreSkill("AttackBoost", 2, new int[]{3, 5, 9, 7, 8, 9, 10}, new double[]{1, 1, 1, 1.05, 1.06, 1.08, 1.1});
+    public static final Skill peakPerformance = 
+            new DamageUpSkill("PeakPerformance", 2, new int[]{5, 10, 20});
+    public static final Skill criticalEye = 
+            new AffinitySkill("CriticalEye", 2, new int[]{5, 10, 15, 20, 25, 30, 40});
+    public static final Skill criticalBoost = 
+            new AffinityMultiplierSkill("CriticalBoost", 2, new double[]{1.3, 1.35, 1.4});
+    public static final Skill weaknessExploit = 
+            new AffinitySkill("WeaknessExploit", 2, new int[]{15, 30, 50});
+    public static final Skill criticalDraw = 
+            new AffinitySkill("CriticalDraw", 2, new int[]{10, 20, 40});
+    public static final Skill maximumMight = 
+            new AffinitySkill("MaximumMight", 2, new int[]{10, 20, 30});
+    public static final Skill agitator = 
+            new DamageAffinityUpSkill("Agitator", 2, new int[]{4, 8, 12, 16, 20}, new int[]{3, 5, 7, 10, 15});
+    public static final Skill counterstrike = 
+            new DamageUpSkill("Counterstrike", 2, new int[]{10, 15, 25});
+    public static final Skill punishingDraw = 
+            new DamageUpSkill("Counterstrike", 2, new int[]{3, 5, 7});
+        
+    public Simulator()
+    {
+        helms = new ArrayList<>();
+        chests = new ArrayList<>();
+
+        selectedHelms = new ArrayList<>();
+        selectedChests = new ArrayList<>();
+
+        skills = new HashSet();
+        activeSkills = new HashSet();
+        
+        skills.add(attackBoost);
+        skills.add(peakPerformance);
+        skills.add(criticalEye);
+        skills.add(criticalBoost);
+        skills.add(weaknessExploit);
+        skills.add(criticalDraw);
+        skills.add(maximumMight);
+        skills.add(agitator);
+        skills.add(counterstrike);
+        skills.add(punishingDraw);
+        
+        for(Skill skill: skills)
+        {
+            activeSkills.add(skill);
+            skill.setActive(true);
+        }
+    }
+    
+    public void activateSkill(Skill skill)
+    {
+        activeSkills.add(skill);
+        skill.setActive(true);
+    }
+    
+    public void diactivateSkill(Skill skill)
+    {
+        activeSkills.remove(skill);
+        skill.setActive(false);
+    }
+    
+    private void DEFAULT_ACTIVE_SKILLS()
+    {
+        diactivateSkill(punishingDraw);
+        diactivateSkill(counterstrike);
+        diactivateSkill(criticalDraw);
+    }
+    
+    public void addHelm(Armor helm)
+    {
+        helms.add(helm);
+    }
+    
+    public void addChest(Armor chest)
+    {
+        chests.add(chest);
+    }
+    
+    private void prepare()
+    {
+        selectedHelms.clear();
+        selectedChests.clear();
+        
+        boolean addFlag;
+        for(Armor helm: helms)
+        {
+            addFlag = true;
+            for(int i = 0; i < selectedHelms.size(); )
+            {
+                int compare = helm.compareTo(selectedHelms.get(i));
+                if(compare > 0)
+                    selectedHelms.remove(i);
+                else if(compare < 0)
+                {
+                    addFlag = false;
+                    break;
+                }
+                else
+                    i++;
+            }
+            if(addFlag)
+                selectedHelms.add(helm);
+        }
+        
+        for(Armor chest: chests)
+        {
+            addFlag = true;
+            for(int i = 0; i < selectedChests.size(); )
+            {
+                int compare = chest.compareTo(selectedChests.get(i));
+                if(compare > 0)
+                    selectedChests.remove(i);
+                else if(compare < 0)
+                {
+                    addFlag = false;
+                    break;
+                }
+                else
+                    i++;
+            }
+            if(addFlag)
+                selectedChests.add(chest);
+        }
+            
+    }
     
     
     public static void main(String[] args)

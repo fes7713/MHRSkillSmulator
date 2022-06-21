@@ -113,74 +113,154 @@ public class Armor implements Comparable<Armor>{
         
         // Chekc if two has the same skills
         // It does not check skill level here.
+//        boolean allMatch1 = skills
+//                    .keySet()
+//                    .stream()
+//                    .filter(skill -> skill.isActive())
+//                    .allMatch(skill -> o.getSkills().containsKey(skill));
+//        boolean allMatch2 = o.getSkills()
+//                    .keySet()
+//                    .stream()
+//                    .filter(skill -> skill.isActive())
+//                    .allMatch(skill -> skills.containsKey(skill));
+//        if(!allMatch1 || !allMatch2)
+//            return 0;
         
-        boolean allMatch1 = skills
-                    .keySet()
-                    .stream()
-                    .filter(skill -> skill.isActive())
-                    .allMatch(skill -> o.getSkills().containsKey(skill));
-        boolean allMatch2 = o.getSkills()
-                    .keySet()
-                    .stream()
-                    .filter(skill -> skill.isActive())
-                    .allMatch(skill -> skills.containsKey(skill));
-        if(!allMatch1 || !allMatch2)
-            return 0;
         
-        // Same slot
+        int slotBattle, skillBattle;
+        
         if(slot1 == o.getSlot1() && slot2 == o.getSlot2() && slot3 == o.getSlot3())
+            slotBattle = 0;
+        else{
+            int slot3Battle = slot3 - o.getSlot3();
+            int slot2Battle = slot3 + slot2 - (o.getSlot3() + o.getSlot2());
+            int slot1Battle = slot3 + slot2 + slot1 - (o.getSlot3() + o.getSlot2() + o.getSlot1());
+
+            if(slot3Battle >= 0 && slot2Battle >= 0 && slot1Battle >= 0)
+                slotBattle = 1;
+            else if(slot3Battle <= 0 && slot2Battle <= 0 && slot1Battle <= 0)
+                slotBattle = -1;
+            else
+                slotBattle = 0;
+        }
+        
+        // skill battle
+        
+        
+        boolean allSkillExist1 = skills
+                .keySet()
+                .stream()
+                .filter(skill -> skill.isActive())
+                .allMatch(skill -> o.getSkills().containsKey(skill));
+        boolean allSkillExist2 = o.getSkills()
+                .keySet()
+                .stream()
+                .filter(skill -> skill.isActive())
+                .allMatch(skill -> skills.containsKey(skill));
+        
+        if(allSkillExist1 && allSkillExist2)
         {
             boolean allEqual = skills
-                        .keySet()
-                        .stream()
-                        .filter(skill -> skill.isActive())
-                        .allMatch(skill -> skills.get(skill) == o.getSkills().get(skill));
+                    .keySet()
+                    .stream()
+                    .filter(skill -> skill.isActive())
+                    .allMatch(skill -> skills.get(skill) == o.getSkills().get(skill));
+            
             if(allEqual)
-                return 0;
-            
-            
-            boolean compare1to2 = skills
+                skillBattle = 0;
+            else{
+                boolean compare1to2 = skills
                         .keySet()
                         .stream()
                         .filter(skill -> skill.isActive())
                         .allMatch(skill -> skills.get(skill) >= o.getSkills().get(skill));
             
-            boolean compare2to1 = skills
+                boolean compare2to1 = skills
                         .keySet()
                         .stream()
                         .filter(skill -> skill.isActive())
                         .allMatch(skill -> skills.get(skill) <= o.getSkills().get(skill));
-            
-            if(compare1to2)
-                return 1;
-            if(compare2to1)
-                return -1;
-            
-            return 0;
+                
+                if(compare1to2)
+                    skillBattle = 1;
+                else if(compare2to1)
+                    skillBattle = -1;
+                else
+                    throw new RuntimeException("Something wrong with skill calc");
+            }
         }
-        else{
+        // One has all of skills of anothers but the opposite is not true
+        else if(allSkillExist1)
+        {
             boolean compare = skills
                         .keySet()
                         .stream()
                         .filter(skill -> skill.isActive())
-                        .allMatch(skill -> skills.get(skill) == o.getSkills().get(skill));
-            
+                        .allMatch(skill -> skills.get(skill) <= o.getSkills().get(skill));
             if(compare)
-            {
-                int slot3Battle = slot3 - o.getSlot3();
-                int slot2Battle = slot3 + slot2 - (o.getSlot3() + o.getSlot2());
-                int slot1Battle = slot3 + slot2 + slot1 - (o.getSlot3() + o.getSlot2() + o.getSlot1());
-                
-                if(slot3Battle >= 0 && slot2Battle >= 0 && slot1Battle >= 0)
-                    return 1;
-                if(slot3Battle <= 0 && slot2Battle <= 0 && slot1Battle <= 0)
-                    return -1;
-                return 0;
-            }
-            else{
-                return 0;
-            }
+                skillBattle = -1;
+            else
+                skillBattle = 0;
         }
+        else if(allSkillExist2)
+        {
+            boolean compare = o.getSkills()
+                        .keySet()
+                        .stream()
+                        .filter(skill -> skill.isActive())
+                        .allMatch(skill -> skills.get(skill) >= o.getSkills().get(skill));
+            if(compare)
+                skillBattle = 1;
+            else
+                skillBattle = 0;
+        }
+        else{
+            skillBattle = 0;
+        }
+        
+        if(skillBattle == 0 && slotBattle == 0)
+            return 0;
+        if(skillBattle >= 0 && slotBattle >= 0)
+            return 1;
+        if(skillBattle <= 0 && slotBattle <= 0)
+            return -1;
+        return 0;
+//        
+//        // Same slot
+//        if(slot1 == o.getSlot1() && slot2 == o.getSlot2() && slot3 == o.getSlot3())
+//        {
+//            
+//            
+//            
+//            
+//            
+//            
+//            
+//            return 0;
+//        }
+//        else{
+//            boolean compare = skills
+//                        .keySet()
+//                        .stream()
+//                        .filter(skill -> skill.isActive())
+//                        .allMatch(skill -> skills.get(skill) == o.getSkills().get(skill));
+//            
+//            if(compare)
+//            {
+//                int slot3Battle = slot3 - o.getSlot3();
+//                int slot2Battle = slot3 + slot2 - (o.getSlot3() + o.getSlot2());
+//                int slot1Battle = slot3 + slot2 + slot1 - (o.getSlot3() + o.getSlot2() + o.getSlot1());
+//                
+//                if(slot3Battle >= 0 && slot2Battle >= 0 && slot1Battle >= 0)
+//                    return 1;
+//                if(slot3Battle <= 0 && slot2Battle <= 0 && slot1Battle <= 0)
+//                    return -1;
+//                return 0;
+//            }
+//            else{
+//                return 0;
+//            }
+//        }
     }
 
 //    @Override
@@ -241,8 +321,8 @@ public class Armor implements Comparable<Armor>{
         Armor armor1 = new Armor("Helm1", 1, 1, 1);
         armor1.addSkill(attackBoost, 4);
         armor1.addSkill(peakPerformance, 2);
-//        armor1.addSkill(criticalEye, 4);
-//        criticalEye.setActive(false);
+        armor1.addSkill(criticalEye, 2);
+        criticalEye.setActive(false);
         
         System.out.println(armor.compareTo(armor1));
         System.out.println(armor.getScore());
