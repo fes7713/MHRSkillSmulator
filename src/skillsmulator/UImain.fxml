@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.chart.LineChart?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.control.Accordion?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.AnchorPane?>
+
+<AnchorPane id="AnchorPane" prefHeight="666.0" prefWidth="933.0" xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1" fx:controller="skillsmulator.UImainController">
+    <children>
+        <Label fx:id="label" alignment="CENTER_RIGHT" layoutX="467.0" layoutY="120.0" minHeight="16" minWidth="69" text="達人芸" />
+      <LineChart fx:id="chart" layoutX="14.0" layoutY="44.0" prefHeight="608.0" prefWidth="430.0">
+        <xAxis>
+          <NumberAxis side="BOTTOM" />
+        </xAxis>
+        <yAxis>
+          <NumberAxis side="LEFT" />
+        </yAxis>
+      </LineChart>
+      <Accordion layoutX="536.0" layoutY="91.0" />
+      <ComboBox fx:id="combobox" layoutX="558.0" layoutY="116.0" prefWidth="150.0" />
+      <CheckBox fx:id="checkbox" layoutX="499.0" layoutY="324.0" mnemonicParsing="false" text="攻撃" />
+      <CheckBox fx:id="checkbox2" layoutX="596.0" layoutY="324.0" mnemonicParsing="false" text="見切り" />
+    </children>
+</AnchorPane>
