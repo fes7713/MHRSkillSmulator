@@ -5,8 +5,9 @@
 package skillsmulator;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import skillsmulator.Skill.AffinityMultiplierSkill;
@@ -31,6 +32,8 @@ public class Simulator {
     Set<Skill>skills;
     Set<Skill>activeSkills;
     
+    List<Equipment> equipments;
+    
     public static final Skill attackBoost = 
             new DamageUpMultiplePreSkill("AttackBoost", 2, new int[]{3, 5, 9, 7, 8, 9, 10}, new double[]{1, 1, 1, 1.05, 1.06, 1.08, 1.1});
     public static final Skill peakPerformance = 
@@ -42,7 +45,7 @@ public class Simulator {
     public static final Skill weaknessExploit = 
             new AffinitySkill("WeaknessExploit", 2, new int[]{15, 30, 50});
     public static final Skill criticalDraw = 
-            new AffinitySkill("CriticalDraw", 2, new int[]{10, 20, 40});
+            new AffinitySkill("CriticalDraw", 3, new int[]{10, 20, 40});
     public static final Skill maximumMight = 
             new AffinitySkill("MaximumMight", 2, new int[]{10, 20, 30});
     public static final Skill agitator = 
@@ -63,6 +66,8 @@ public class Simulator {
         skills = new HashSet();
         activeSkills = new HashSet();
         
+        equipments = new ArrayList<>();
+                
         skills.add(attackBoost);
         skills.add(peakPerformance);
         skills.add(criticalEye);
@@ -110,22 +115,26 @@ public class Simulator {
         chests.add(chest);
     }
     
-    private void prepare()
+    private void select(List<Armor>armors, List<Armor>selected)
     {
-        selectedHelms.clear();
-        selectedChests.clear();
+        selected.clear();
         
         boolean addFlag;
-        for(Armor helm: helms)
+        for(Armor armor: armors)
         {
             addFlag = true;
-            for(int i = 0; i < selectedHelms.size(); )
+            for(int i = 0; i < selected.size(); )
             {
-                int compare = helm.compareTo(selectedHelms.get(i));
+                
+                int compare = armor.isStrongerThan(selected.get(i));
                 if(compare > 0)
-                    selectedHelms.remove(i);
+                {
+                    Armor selectedArmor = selected.remove(i);
+                    System.out.println("Removing " + selectedArmor);
+                }
                 else if(compare < 0)
                 {
+                    System.out.println("Not adding " + armor);
                     addFlag = false;
                     break;
                 }
@@ -133,45 +142,54 @@ public class Simulator {
                     i++;
             }
             if(addFlag)
-                selectedHelms.add(helm);
+            {
+                System.out.println("Adding " + armor);
+                selected.add(armor);
+            }
+                
         }
+    }
+    
+    private void prepare()
+    {
+        Weapon weapon = new Weapon("Sord", 200, 0);
+        select(helms, selectedHelms);
+        select(chests, selectedChests);
         
-        for(Armor chest: chests)
+//        sortSeletced(selectedHelms);
+//        sortSeletced(selectedChests);
+        
+        Collections.sort(selectedHelms, Comparator.reverseOrder());
+        Collections.sort(selectedChests, Comparator.reverseOrder());
+        
+        for(int i = 0; i < selectedHelms.size(); i++)
         {
-            addFlag = true;
-            for(int i = 0; i < selectedChests.size(); )
+            for(int j = 0; j < selectedChests.size(); j++)
             {
-                int compare = chest.compareTo(selectedChests.get(i));
-                if(compare > 0)
-                    selectedChests.remove(i);
-                else if(compare < 0)
-                {
-                    addFlag = false;
-                    break;
-                }
-                else
-                    i++;
+//                System.out.println("1");
+                equipments.add(new Equipment(weapon, selectedHelms.get(i), selectedChests.get(j)));
             }
-            if(addFlag)
-                selectedChests.add(chest);
         }
-            
+        Collections.sort(equipments);
+        equipments.stream().forEach(e -> System.out.println(e.getScore()));
+    }
+    
+//    private void sortSeletced(List<Armor> selected)
+//    {
+//        selected.stream().sorted((o1, o2) -> {
+//            return o1.getScore() - o2.getScore();
+//        });
+//    }
+    
+    public void run()
+    {
+        prepare();
     }
     
     
     public static void main(String[] args)
     {
-        Skill attackBoost = new DamageUpMultiplePreSkill("AttackBoost", 2, new int[]{3, 5, 9, 7, 8, 9, 10}, new double[]{1, 1, 1, 1.05, 1.06, 1.08, 1.1});
-        Skill peakPerformance = new DamageUpSkill("PeakPerformance", 2, new int[]{5, 10, 20});
-        Skill criticalEye = new AffinitySkill("CriticalEye", 2, new int[]{5, 10, 15, 20, 25, 30, 40});
-        Skill criticalBoost = new AffinityMultiplierSkill("CriticalBoost", 2, new double[]{1.3, 1.35, 1.4});
-        Skill weaknessExploit = new AffinitySkill("WeaknessExploit", 2, new int[]{15, 30, 50});
-        Skill criticalDraw = new AffinitySkill("CriticalDraw", 2, new int[]{10, 20, 40});
-        Skill maximumMight = new AffinitySkill("MaximumMight", 2, new int[]{10, 20, 30});
-        Skill agitator = new DamageAffinityUpSkill("Agitator", 2, new int[]{4, 8, 12, 16, 20}, new int[]{3, 5, 7, 10, 15});
-        Skill counterstrike = new DamageUpSkill("Counterstrike", 2, new int[]{10, 15, 25});
-        Skill punishingDraw = new DamageUpSkill("Counterstrike", 2, new int[]{3, 5, 7});
-        
+        Simulator simu = new Simulator();
         
         Armor helm = new Armor("Helm", 0, 1, 0);
         helm.addSkill(attackBoost, 2);
@@ -185,19 +203,22 @@ public class Simulator {
         Armor helm4 = new Armor("Helm4", 0, 0, 3);
         helm4.addSkill(weaknessExploit, 2);
         Armor helm5 = new Armor("Helm5", 0, 1, 0);
-        helm4.addSkill(agitator, 2);
-        helm4.addSkill(counterstrike, 1);
-        Armor helm6 = new Armor("Helm6", 1, 1, 0);
-        helm4.addSkill(criticalEye, 1);
+        helm5.addSkill(agitator, 2);
+        helm5.addSkill(counterstrike, 1);
+        Armor helm6 = new Armor("Helm6", 0, 0, 1);
+        helm6.addSkill(criticalEye, 1);
+        Armor helm7 = new Armor("Helm7", 0, 0, 2);
+        helm7.addSkill(peakPerformance, 2);
+        helm7.addSkill(criticalBoost, 1);
         
-        List<Armor> helms = new LinkedList();
-        helms.add(helm);
-        helms.add(helm1);
-        helms.add(helm2);
-        helms.add(helm3);
-        helms.add(helm4);
-        helms.add(helm5);
-        helms.add(helm6);
+        simu.addHelm(helm);
+        simu.addHelm(helm1);
+        simu.addHelm(helm2);
+        simu.addHelm(helm3);
+        simu.addHelm(helm4);
+        simu.addHelm(helm5);
+        simu.addHelm(helm6);
+        simu.addHelm(helm7);
         
         Armor chest = new Armor("Chest", 0, 1, 0);
         chest.addSkill(criticalEye, 1);
@@ -217,9 +238,14 @@ public class Simulator {
         chest6.addSkill(criticalBoost, 1);
         chest6.addSkill(criticalDraw, 1);
         
-        List<Armor> chests = new LinkedList();
-        chests.add(chest);
-        chests.add(chest1);
-        chests.add(chest2);
+        simu.addChest(chest);
+        simu.addChest(chest1);
+        simu.addChest(chest2);
+        simu.addChest(chest3);
+        simu.addChest(chest4);
+        simu.addChest(chest5);
+        simu.addChest(chest6);
+        
+        simu.run();
     }
 }

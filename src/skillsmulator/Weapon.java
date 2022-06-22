@@ -8,7 +8,7 @@ package skillsmulator;
  *
  * @author fes77
  */
-public class Weapon {
+public class Weapon implements Decoratable{
     private final String name;
    
     private final int damage;
@@ -17,7 +17,7 @@ public class Weapon {
     private int slot2;
     private int slot3;
 
-    public Weapon(String name, int damage, int affinity, int slot1, int slot2, int slot3) {
+    public Weapon(String name, int damage, int affinity, int slot3, int slot2, int slot1) {
         this.name = name;
         this.damage = damage;
         this.affinity = affinity;

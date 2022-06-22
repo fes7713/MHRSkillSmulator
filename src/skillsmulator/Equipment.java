@@ -4,46 +4,49 @@
  */
 package skillsmulator;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import skillsmulator.Skill.AffinityMultiplierSkill;
-import skillsmulator.Skill.AffinitySkill;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import static skillsmulator.Simulator.attackBoost;
+import static skillsmulator.Simulator.criticalBoost;
+import static skillsmulator.Simulator.criticalEye;
+import static skillsmulator.Simulator.peakPerformance;
 import skillsmulator.Skill.AttackSkill;
-import skillsmulator.Skill.DamageAffinityUpSkill;
-import skillsmulator.Skill.DamageUpMultiplePreSkill;
-import skillsmulator.Skill.DamageUpSkill;
 import skillsmulator.Skill.Skill;
 
 /**
  *
  * @author fes77
  */
-public class Equipment {
+public class Equipment implements Comparable<Equipment>{
     private Weapon weapon;
     private Armor helm;
     private Armor chest;
+    private int score;
 
     private Map<Skill, Integer> skills;
-    private Map<Class, Map<Skill, Integer>> skillMap;
     
-    public Equipment(Weapon weapon, Armor helm, Armor chest) {
+    private Map<Skill, Integer> decorations;
+    private Map<Skill, Integer> bestDecorations;
+    private double bestExpectation;
+    boolean calculated;
+    public Equipment(Weapon weapon, Armor helm, Armor chest){
         this.weapon = weapon;
         this.helm = helm;
         this.chest = chest;
-        skills = getSkillMap();
+        calculated = false;
+        skills = findSkillMap();
+        decorations = new HashMap();
+        bestDecorations = new HashMap<>();
+        updateScore();
     }
    
-//    private void putSkillInterface()
-//    {
-//        skillMap.put(DamageUp.class, new HashMap());
-//        skillMap.put(DamageMultiplier.class, new HashMap());
-//        skillMap.put(AffinityUp.class, new HashMap());
-//        skillMap.put(AffinityMultiplier.class, new HashMap());
-//    }
-//    
-    public Map<Skill, Integer> getSkillMap()
+    private Map<Skill, Integer> findSkillMap()
     {
         Map<Skill, Integer> skillMap = new HashMap();
         skillMap.putAll(helm.getSkills());
@@ -70,83 +73,182 @@ public class Equipment {
         return skillMap;
     }
     
+    public void updateScore()
+    {
+        score = 0;
+        score += helm.getScore();
+        score += chest.getScore();
+    }
+    
+    public void updateBestDecoration(Skill... activeSkills)
+    {
+        updateBestDecoration(Arrays.asList(activeSkills));
+    }
+    
+    public void updateBestDecoration(List<Skill> activeSkills)
+    {
+        activeSkills = activeSkills.stream().filter(Skill::isActive).toList();
+        
+        double bestExpectation = 0;
+        
+        int availableSlots3 = Stream.of(weapon, helm, chest).map(deco -> deco.getSlot3()).reduce(0, (a, b) -> a + b);
+        int availableSlots2 = Stream.of(weapon, helm, chest).map(deco -> deco.getSlot2()).reduce(0, (a, b) -> a + b);
+        int availableSlots1 = Stream.of(weapon, helm, chest).map(deco -> deco.getSlot1()).reduce(0, (a, b) -> a + b);
+        
+//        System.out.println("avbailableSlots3 : " + availableSlots3);
+//        System.out.println("avbailableSlots2 : " + availableSlots2);
+//        System.out.println("avbailableSlots1 : " + availableSlots1);
+        
+        
+        List<Skill> slot3Skills = activeSkills.stream().filter(skill -> skill.getCost() == 3).toList();
+        List<Skill> slot2Skills = activeSkills.stream().filter(skill -> skill.getCost() == 2).toList();
+        
+//        System.out.println("slot3Skills" + slot3Skills);
+//        System.out.println("slot2Skills" + slot2Skills);
+        
+        Map<Skill, Integer> skillIncrease = skills.entrySet()
+                .stream()
+                .collect(
+                        Collectors.toMap(
+                                Entry::getKey, 
+                                entry -> entry.getKey().getMax() - entry.getValue() - 1
+                        )
+                );
+        activeSkills
+                .stream()
+                .filter(skill -> !skillIncrease.containsKey(skill))
+                .forEach(skill -> skillIncrease.put(skill, skill.getMax()));
+//                        Collectors.groupingBy(Entry::getKey, Collectors.summingInt(Entry::getValue)));
+        
+//        List<Skill> skillKeys = skillIncrease.keySet().stream().toList();
+        int remainingSkillSum = skillIncrease.entrySet().stream().map(Entry::getValue).reduce(0, Integer::sum);
+        bestExpectation = 0;
+        
+        if(!slot2Skills.isEmpty())
+        {
+            bestExpectation = 0;
+            skillLooper(skillIncrease, slot2Skills, 0, availableSlots2 + availableSlots3, remainingSkillSum);
+            decorations = bestDecorations
+                .entrySet()
+                .stream()
+                .filter(entry -> entry.getValue() != 0)
+                .collect(
+                        Collectors.toMap(
+                                Entry::getKey, 
+                                Entry::getValue
+                        )
+                );
+        }
+    }
+    
+    private void skillLooper(
+            Map<Skill, Integer> skillSizeMap, 
+            List<Skill> skillKeys, 
+            int skillIndex, 
+            int remainingSlotCount,
+            int remainingSkillSum)
+    {
+        Skill keySkill = skillKeys.get(skillIndex);
+        int skillSize = skillSizeMap.get(keySkill);
+        
+        if(remainingSlotCount < 0)
+            throw new RuntimeException("Negative slot");
+//        if(remainingSlotCount == 0)
+//        {
+//            decorations.put(keySkill, 0);
+//            skillLooper(skillSizeMap, skillKeys, skillIndex + 1, remainingSlotCount - i, remainingSkillSum - skillSize);
+//            return;
+//        }
+        
+        if(remainingSlotCount <= skillSize)
+        {
+            decorations.put(keySkill, remainingSlotCount);
+        }
+        
+        if(skillIndex == skillKeys.size() - 1)
+        {
+//            System.out.println("Reached End");
+//            System.out.println(decorations);
+            double currentExp = getExpectation();
+            if(currentExp > bestExpectation)
+            {
+                bestExpectation = currentExp;
+                bestDecorations.clear();
+                bestDecorations.putAll(decorations);
+            }
+            return;
+        }
+        
+        int skillLoopStart = 0;
+        
+        if(remainingSlotCount > remainingSkillSum - skillSize)
+        {
+            //works
+            if(remainingSlotCount > remainingSkillSum)
+                throw new RuntimeException("Error detected");
+            int difference = remainingSlotCount - (remainingSkillSum - skillSize);
+            skillLoopStart = difference;
+        }
+        
+        for(int i = skillLoopStart; i <= skillSize && i <= remainingSlotCount; i++)
+        {
+//            if(i != 0)
+            decorations.put(keySkill, i);
+            skillLooper(skillSizeMap, skillKeys, skillIndex + 1, remainingSlotCount - i, remainingSkillSum - skillSize);
+        }
+    }
+     
+    public Map<Skill, Integer> getSkillMap()
+    {
+        Map<Skill, Integer>decorationsArranged = decorations
+                .entrySet()
+                .stream()
+                .filter(entry -> entry.getValue() != 0)
+                .collect(
+                        Collectors.toMap(
+                                Entry::getKey, 
+                                Entry::getValue
+                        )
+                );
+        
+        return Stream.of(decorationsArranged, skills)
+                .flatMap(m -> m.entrySet().stream())
+                .collect(Collectors.groupingBy(Entry::getKey, Collectors.summingInt(Entry::getValue)));
+    }
+    
+    
+    
+    
     public double getExpectation()
     {
-//        int damage = weapon.getDamage();
-//        int affinity = weapon.getAffinity();
-//        
-//        int damageIncrease = skills.keySet()
-//                .stream()
-//                .filter(DamageUp.class::isInstance)
-//                .map (DamageUp.class::cast)
-//                .map(
-//                        skill -> skill.getDamageUp(skills.get(skill))
-//                )
-//                .reduce(0, Integer::sum);
-//        
-//        double newDamage = skills.keySet()
-//                .stream()
-//                .filter(DamageMultiplier.class::isInstance)
-//                .map (DamageMultiplier.class::cast)
-//                .map(multiplier -> multiplier.getDamageMultiplier(skills.get(multiplier)))
-//                .reduce((double)damage, (x, y)-> x*y);
-//        
-//        System.out.println("New damage :" + newDamage);
-//        int affinityIncrease = skills.
-//                keySet().
-//                stream().
-//                filter(AffinityUp.class::isInstance).
-//                map (AffinityUp.class::cast).
-//                map(
-//                        skill -> skill.getAffinityUp(skills.get(skill))
-//                ).reduce(0, Integer::sum);
-//        
-//        
-//        double affinityMultiplier = skills.
-//                keySet().
-//                stream().
-//                filter(AffinityMultiplier.class::isInstance).
-//                map (AffinityMultiplier.class::cast).
-//                map(
-//                        skill -> skill.getAffinityMultiplier(skills.get(skill))
-//                ).reduce(1d, (x, y)-> x*y);
-//        
-//        if(affinity + affinityIncrease >= 100)
-//            affinity = 100;
-//        else
-//            affinity += affinityIncrease;
-//        
-//        return (newDamage + damageIncrease) * (100 - affinity) / 100 + (newDamage + damageIncrease) * affinity / 100 * 1.25;
         Expectation exp = new Expectation(weapon);
         
-        skills.keySet()
+        Map<Skill, Integer> newSkills = getSkillMap();
+
+        
+        newSkills.keySet()
                 .stream()
                 .filter(AttackSkill.class::isInstance)
                 .map(AttackSkill.class::cast)
-                .forEach(skill -> skill.evalExpectation(exp, skills.get(skill)));
+                .forEach(skill -> skill.evalExpectation(exp, newSkills.get(skill)));
         
-//        for(Skill skill: skills.keySet())
-//        {
-//            skill.editExpectation(exp, skills.get(skill));
-//        }
         return exp.getExpectation();
     }
+    
+    @Override
+    public int compareTo(Equipment o) {
+        return score - o.getScore();
+    }
+
+    public int getScore() {
+        return score;
+    }
+    
             
     public static void main(String[] args)
     {
-        Skill attackBoost = new DamageUpMultiplePreSkill("AttackBoost", 2, new int[]{3, 5, 9, 7, 8, 9, 10}, new double[]{1, 1, 1, 1.05, 1.06, 1.08, 1.1});
-        Skill peakPerformance = new DamageUpSkill("PeakPerformance", 2, new int[]{5, 10, 20});
-        Skill criticalEye = new AffinitySkill("CriticalEye", 2, new int[]{5, 10, 15, 20, 25, 30, 40});
-        Skill criticalBoost = new AffinityMultiplierSkill("CriticalBoost", 2, new double[]{1.3, 1.35, 1.4});
-        Skill weaknessExploit = new AffinitySkill("WeaknessExploit", 2, new int[]{15, 30, 50});
-        Skill criticalDraw = new AffinitySkill("CriticalDraw", 2, new int[]{10, 20, 40});
-        Skill maximumMight = new AffinitySkill("MaximumMight", 2, new int[]{10, 20, 30});
-        Skill agitator = new DamageAffinityUpSkill("Agitator", 2, new int[]{4, 8, 12, 16, 20}, new int[]{3, 5, 7, 10, 15});
-        Skill counterstrike = new DamageUpSkill("Counterstrike", 2, new int[]{10, 15, 25});
-        Skill punishingDraw = new DamageUpSkill("Counterstrike", 2, new int[]{3, 5, 7});
-        
-        
-        Armor helm = new Armor("Helm", 0, 0, 0);
+
+        Armor helm = new Armor("Helm", 1, 2, 1);
         helm.addSkill(attackBoost, 2);
         helm.addSkill(peakPerformance, 1);
         Armor helm1 = new Armor("Helm", 0, 0, 0);
@@ -162,7 +264,7 @@ public class Equipment {
         helms.add(helm1);
         helms.add(helm2);
         
-        Armor chest = new Armor("Chest", 0, 0, 0);
+        Armor chest = new Armor("Chest", 0, 2, 2);
         chest.addSkill(criticalEye, 1);
         chest.addSkill(criticalBoost, 1);
         Armor chest1 = new Armor("Chest", 0, 0, 0);
@@ -177,9 +279,14 @@ public class Equipment {
         chests.add(chest2);
         
         Weapon weapon = new Weapon("Sord", 200, 0);
-        
+        peakPerformance.setActive(false);
         Equipment equipment = new Equipment(weapon, helm, chest);
-        System.out.println(equipment.getSkillMap());
+        System.out.println("Skill Map" + equipment.getSkillMap());
         System.out.println(equipment.getExpectation());
+        equipment.updateBestDecoration(attackBoost, peakPerformance, criticalBoost, criticalEye);
+        System.out.println(equipment.getExpectation());
+        System.out.println("Skill Map" + equipment.getSkillMap());
     }
+
+    
 }
