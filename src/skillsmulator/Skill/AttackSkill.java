@@ -13,8 +13,8 @@ import skillsmulator.Expectation;
 public abstract class AttackSkill extends Skill{
 
     
-    public AttackSkill(String title, int maxLevel, int cost) {
-        super(title, maxLevel, cost);
+    public AttackSkill(String title, String decorationName, int maxLevel, int cost) {
+        super(title, decorationName, maxLevel, cost);
         
     }
     

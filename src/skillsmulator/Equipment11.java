@@ -22,10 +22,8 @@ import skillsmulator.Armor.Waist;
 import static skillsmulator.Simulator.agitator;
 import static skillsmulator.Simulator.attackBoost;
 import static skillsmulator.Simulator.criticalBoost;
-import static skillsmulator.Simulator.criticalDraw;
 import static skillsmulator.Simulator.criticalEye;
 import static skillsmulator.Simulator.maximumMight;
-import static skillsmulator.Simulator.offensiveGuard;
 import static skillsmulator.Simulator.peakPerformance;
 import static skillsmulator.Simulator.weaknessExploit;
 import skillsmulator.Skill.AttackSkill;
@@ -35,14 +33,14 @@ import skillsmulator.Skill.Skill;
  *
  * @author fes77
  */
-public class Equipment implements Comparable<Equipment>{
+public class Equipment11 implements Comparable<Equipment11>{
     private Weapon weapon;
-    private Helm helm;
-    private Chest chest;
-    private Arm arm;
-    private Waist waist;
-    private Leg leg;
-    private Charm charm;
+    private Armor helm;
+    private Armor chest;
+    private Armor arm;
+    private Armor waist;
+    private Armor leg;
+    private Armor charm;
     private List<Armor> armorList;
     private List<Decoratable> decoratables;
     
@@ -56,7 +54,7 @@ public class Equipment implements Comparable<Equipment>{
     private double bestExpectation;
     boolean calculated;
     
-    public Equipment(Weapon weapon, Helm helm, Chest chest, Arm arm, Waist waist, Leg leg, Charm charm){
+    public Equipment11(Weapon weapon, Helm helm, Chest chest, Arm arm, Waist waist, Leg leg, Charm charm){
         this.weapon = weapon;
         this.helm = helm;
         this.chest = chest;
@@ -75,56 +73,7 @@ public class Equipment implements Comparable<Equipment>{
         bestDecorations = new HashMap<>();
         updateScore();
     }
-
-    public String getHelm() {
-        return helm.getName();
-    }
-
-    public void setHelm(Helm helm) {
-//        this.helm = helm;
-    }
-
-    public String getChest() {
-        return chest.getName();
-    }
-
-    public void setChest(Chest chest) {
-//        this.chest = chest;
-    }
-
-    public String getArm() {
-        return arm.getName();
-    }
-
-    public void setArm(Armor arm) {
-//        this.arm = arm;
-    }
-
-    public String getWaist() {
-        return waist.getName();
-    }
-
-    public void setWaist(Armor waist) {
-//        this.waist = waist;
-    }
-
-    public String getLeg() {
-        return leg.getName();
-    }
-
-    public void setLeg(Armor leg) {
-//        this.leg = leg;
-    }
-
-    public String getCharm() {
-        return charm.getName();
-    }
-
-    public void setCharm(Armor charm) {
-//        this.charm = charm;
-    }
    
-    
     private Map<Skill, Integer> findSkillMap()
     {
 //        Map<Skill, Integer> skillMap = new HashMap();
@@ -158,10 +107,6 @@ public class Equipment implements Comparable<Equipment>{
                 .forEach(entry-> entry.setValue(entry.getKey().getMax()));
          
         return skillMap;
-    }
-    
-    public Map<Skill, Integer> getBestDecorationMap() {
-        return bestDecorations;
     }
     
     public Map<Skill, Integer> getSkillMap()
@@ -208,16 +153,8 @@ public class Equipment implements Comparable<Equipment>{
 //        System.out.println("avbailableSlots1 : " + availableSlots1);
         
         
-        List<Skill> slot3Skills = activeSkills
-                .stream()
-                .filter(AttackSkill.class::isInstance)
-                .filter(skill -> skill.getCost() == 3)
-                .toList();
-        List<Skill> slot2Skills = activeSkills
-                .stream()
-                .filter(AttackSkill.class::isInstance)
-                .filter(skill -> skill.getCost() == 2)
-                .toList();
+        List<Skill> slot3Skills = activeSkills.stream().filter(skill -> skill.getCost() == 3).toList();
+        List<Skill> slot2Skills = activeSkills.stream().filter(skill -> skill.getCost() == 2).toList();
         
 //        System.out.println("slot3Skills" + slot3Skills);
 //        System.out.println("slot2Skills" + slot2Skills);
@@ -235,32 +172,12 @@ public class Equipment implements Comparable<Equipment>{
                 .filter(skill -> !remainingSkills.containsKey(skill))
                 .forEach(skill -> remainingSkills.put(skill, skill.getMax()));
         
-        int remainingSlot3SkillSum = remainingSkills
-                .entrySet()
-                .stream()
-                .filter(entry -> entry.getKey().getCost() == 3)
-                .map(Entry::getValue)
-                .reduce(0, Integer::sum);
-        int remainingSlot2SkillSum = remainingSkills
-                .entrySet()
-                .stream()
-                .filter(entry -> entry.getKey().getCost() == 2)
-                .map(Entry::getValue)
-                .reduce(0, Integer::sum);
+        int remainingSkillSum = remainingSkills.entrySet().stream().map(Entry::getValue).reduce(0, Integer::sum);
         
         if(!slot2Skills.isEmpty())
         {
             bestExpectation = 0;
-            skillLooper(
-                    remainingSkills, 
-                    slot3Skills, 
-                    slot2Skills, 
-                    3, 
-                    0, 
-                    availableSlots3, 
-                    availableSlots2, 
-                    remainingSlot3SkillSum, 
-                    remainingSlot2SkillSum);
+            skillLooper(remainingSkills, slot2Skills, 0, availableSlots2 + availableSlots3, remainingSkillSum);
             decorations = bestDecorations
                 .entrySet()
                 .stream()
@@ -281,124 +198,62 @@ public class Equipment implements Comparable<Equipment>{
         bestDecorations.putAll(decorations);
     }
     
-     private void skillLooper(
+    private void skillLooper(
             Map<Skill, Integer> skillSizeMap, 
-            List<Skill> slot3Skills, 
-            List<Skill> slot2Skills, 
-            int slotSearching,
+            List<Skill> skillKeys, 
             int skillIndex, 
-            int remainingSlot3Count,
-            int remainingSlot2Count,
-            int remainingSlot3SkillSum,
-            int remainingSlot2SkillSum)
+            int remainingSlotCount,
+            int remainingSkillSum)
     {
-        List<Skill> skillKeys;
-        int remainingSlotCount;
-        
-        switch (slotSearching) {
-            case 2:
-                skillKeys = slot2Skills;
-                // if available skill is zero then finish
-                if(remainingSlot2SkillSum == 0)
-                    return;
-                
-                remainingSlotCount = remainingSlot3Count + remainingSlot2Count;
-                break;
-            case 3:
-                skillKeys = slot3Skills;
-                // if available skill is zero then go to search next slot
-                if(remainingSlot3SkillSum == 0)
-                {
-                    skillLooper(skillSizeMap, slot3Skills, slot2Skills, 2, 0, remainingSlot3Count, remainingSlot2Count, remainingSlot3SkillSum, remainingSlot2SkillSum);
-                    return;
-                }
-                remainingSlotCount = remainingSlot3Count;
-                
-                break;
-            default:
-                throw new RuntimeException("Error with choosing slot");
-        }
-        
         Skill keySkill = skillKeys.get(skillIndex);
         int skillSize = skillSizeMap.get(keySkill);
         
-        
         if(remainingSlotCount < 0)
             throw new RuntimeException("Negative slot");
+        
+        boolean flag = false;
+        
         
         // Reaching the end of skill list
         if(skillIndex == skillKeys.size() - 1)
         {
             // Assign remaining slots
-            if(slotSearching == 2)
-            {
-                decorations.put(keySkill, Math.min(remainingSlotCount, skillSize));
-                double currentExp = getExpectation();
+            decorations.put(keySkill, Math.min(remainingSlotCount, skillSize));
+            
+            double currentExp = getExpectation();
 
-                if(currentExp > bestExpectation)
-                {
-                    bestExpectation = currentExp;
-                    setBestDecoration(decorations);
-                }
-                return;
+            if(currentExp > bestExpectation)
+            {
+                bestExpectation = currentExp;
+                setBestDecoration(decorations);
             }
-            
-            
+            return;
         }
         
         int skillLoopStart = 0;
         
         // All of available slots are pushed to the end so apply all of remaining slot to the rest of skills
         // Zero is not allowed.
-        if(slotSearching == 3)
+        if(remainingSlotCount > remainingSkillSum - skillSize)
         {
-            if(remainingSlotCount > remainingSlot3SkillSum - skillSize)
-            {
-                if(remainingSlotCount > remainingSlot2SkillSum)
-                    throw new RuntimeException("Error detected");
-                int difference = remainingSlotCount - (remainingSlot3SkillSum - skillSize);
-                int acceptableOverflowInSlot2 = remainingSlot2SkillSum - remainingSlot2Count;
-                if(acceptableOverflowInSlot2 <= 0 )
-                    skillLoopStart = difference;
-                else if(difference - acceptableOverflowInSlot2 > skillSize)
-                    skillLoopStart = skillSize;
-                else
-                    if(difference - acceptableOverflowInSlot2 > 0)
-                        skillLoopStart = difference - acceptableOverflowInSlot2;
-            }
+            //works
+            if(remainingSlotCount > remainingSkillSum)
+                throw new RuntimeException("Error detected");
+            int difference = remainingSlotCount - (remainingSkillSum - skillSize);
+            skillLoopStart = difference;
+            flag = false;
         }
-        else if(slotSearching == 2)
-        {
-            if(remainingSlotCount > remainingSlot2SkillSum - skillSize)
-            {
-                // Max slot assignment
-                if(remainingSlotCount > remainingSlot2SkillSum)
-                    skillLoopStart = skillSize;
-                else{
-                    int difference = remainingSlotCount - (remainingSlot2SkillSum - skillSize);
-                    skillLoopStart = difference;
-                }
-            }
-        }
-        else{
-            throw new RuntimeException("Error");
-        }
-
+        if(flag)
+            System.out.println("This is it");
         
-        for(int i = skillLoopStart; i <= Math.min(remainingSlotCount, skillSize); i++)
+
+        for(int i = skillLoopStart; i <= skillSize && i <= remainingSlotCount; i++)
         {
+//            if(i != 0)
+            if(flag)
+                System.out.println("Entered");
             decorations.put(keySkill, i);
-            if(slotSearching == 3)
-            {
-                // End of slot 3 skill list
-                // Go to slot 2
-                if(skillIndex == skillKeys.size() - 1)
-                    skillLooper(skillSizeMap, slot3Skills, slot2Skills, 2, 0, remainingSlot3Count - i, remainingSlot2Count, remainingSlot3SkillSum - skillSize, remainingSlot2SkillSum);
-                else
-                    skillLooper(skillSizeMap, slot3Skills, slot2Skills, 3, skillIndex + 1, remainingSlot3Count - i, remainingSlot2Count, remainingSlot3SkillSum - skillSize, remainingSlot2SkillSum);
-            }
-            else if(slotSearching == 2)
-                skillLooper(skillSizeMap, slot3Skills, slot2Skills, 2, skillIndex + 1, remainingSlot3Count, remainingSlot2Count - i, remainingSlot3SkillSum, remainingSlot2SkillSum - skillSize);
+            skillLooper(skillSizeMap, skillKeys, skillIndex + 1, remainingSlotCount - i, remainingSkillSum - skillSize);
         }
     }
      
@@ -425,7 +280,7 @@ public class Equipment implements Comparable<Equipment>{
     }
     
     @Override
-    public int compareTo(Equipment o) {
+    public int compareTo(Equipment11 o) {
         if(calculated)
             return (int)((getExpectation() - o.getExpectation()) * 100);
         return score - o.getScore();
@@ -469,12 +324,10 @@ public class Equipment implements Comparable<Equipment>{
         skills.add(weaknessExploit);
         skills.add(maximumMight);
         skills.add(agitator);
-        skills.add(criticalDraw);
-        skills.add(offensiveGuard);
         
         
         Weapon weapon = new Weapon("Sord", 200, 0);
-        Helm helm3 = new Helm("Helm3", 4, 2, 1);
+        Helm helm3 = new Helm("Helm3", 0, 5, 1);
         helm3.addSkill(maximumMight, 1);
 
         Chest chest = new Chest("Chest", 0, 1, 0);
@@ -489,11 +342,10 @@ public class Equipment implements Comparable<Equipment>{
         Charm charm = new Charm("charm", 0, 1, 2);
         charm.addSkill(criticalEye, 1);
         
-        Equipment equipment = new Equipment(weapon, helm3, chest, arm, waist, leg, charm);
+        Equipment11 equipment = new Equipment11(weapon, helm3, chest, arm, waist, leg, charm);
         equipment.updateBestDecoration(skills);
         double exp = equipment.getExpectation();
         System.out.println(exp);
-        System.out.println(equipment);
     }
 //    public static void main(String[] args)
 //    {
@@ -531,8 +383,6 @@ public class Equipment implements Comparable<Equipment>{
 //        System.out.println(equipment);
 //        System.out.println(equipment.getExpectation());
 //    }
-
-    
 
     
 }

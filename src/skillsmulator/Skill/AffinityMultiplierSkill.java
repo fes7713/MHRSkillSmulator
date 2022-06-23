@@ -13,8 +13,8 @@ import skillsmulator.Expectation;
 public class AffinityMultiplierSkill extends AttackSkill implements AffinityMultiplier{
     private double[] multiplierSequence;
 
-    public AffinityMultiplierSkill(String title, int cost, double[] multiplierSequence) {
-        super(title, multiplierSequence.length, cost);
+    public AffinityMultiplierSkill(String title, String decorationName, int cost, double[] multiplierSequence) {
+        super(title, decorationName, multiplierSequence.length, cost);
         this.multiplierSequence = multiplierSequence;
     }
 

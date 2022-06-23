@@ -13,8 +13,8 @@ import skillsmulator.Expectation;
 public class DamageUpSkill extends AttackSkill implements DamageUp{
     private final int[] damageSequence;
 
-    public DamageUpSkill(String title, int cost, int[] damageSequence) {
-        super(title, damageSequence.length, cost);
+    public DamageUpSkill(String title, String decorationName, int cost, int[] damageSequence) {
+        super(title, decorationName, damageSequence.length, cost);
         this.damageSequence = damageSequence;
     }
     

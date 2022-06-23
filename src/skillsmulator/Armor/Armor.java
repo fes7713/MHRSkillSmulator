@@ -8,11 +8,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import skillsmulator.Decoratable;
-import skillsmulator.Decoratable;
-import skillsmulator.Skill.AffinitySkill;
+import static skillsmulator.Simulator.attackBoost;
+import static skillsmulator.Simulator.criticalEye;
+import static skillsmulator.Simulator.peakPerformance;
 import skillsmulator.Skill.AttackSkill;
-import skillsmulator.Skill.DamageUpMultiplePreSkill;
-import skillsmulator.Skill.DamageUpSkill;
 import skillsmulator.Skill.Skill;
 
 /**
@@ -253,9 +252,6 @@ public abstract class Armor implements Comparable<Armor>, Decoratable{
     
     public static void main(String[] args)
     {
-        Skill attackBoost = new DamageUpMultiplePreSkill("AttackBoost", 2, new int[]{3, 5, 9, 7, 8, 9, 10}, new double[]{1, 1, 1, 1.05, 1.06, 1.08, 1.1});
-        Skill peakPerformance = new DamageUpSkill("PeakPerformance", 2, new int[]{5, 10, 20});
-        Skill criticalEye = new AffinitySkill("CriticalEye", 2, new int[]{5, 10, 15, 20, 25, 30, 40});
         
         
         Armor armor = new Helm("Helm", 0, 2, 1);

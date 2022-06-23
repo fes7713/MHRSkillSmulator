@@ -42,6 +42,8 @@ public class Expectation {
     public void addAffinity(int amount)
     {
         affinity += amount;
+        if(affinity > 100)
+            affinity = 100;
     }
     
     public void setAffinityMultiplier(double coefficient)

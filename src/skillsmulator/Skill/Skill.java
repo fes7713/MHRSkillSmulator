@@ -9,16 +9,18 @@ package skillsmulator.Skill;
  * @author fes77
  */
 public class Skill {
-    private String title;
+    private String name;
+    private String decorationName;
     protected int maxLevel;
     private int cost;
     boolean active;
 
 
-    public Skill(String title, int maxLevel, int cost) {
+    public Skill(String name, String decorationName,  int maxLevel, int cost) {
         if(maxLevel <= 0)
             throw new IllegalArgumentException("Skill max level should be more than 0");
-        this.title = title;
+        this.name = name;
+        this.decorationName = decorationName;
         this.maxLevel = maxLevel;
         this.cost = cost;
         active = true;
@@ -33,10 +35,18 @@ public class Skill {
     {
         return maxLevel;
     }
-    
+
+    public String getName() {
+        return name;
+    }
+
+    public String getDecorationName() {
+        return decorationName;
+    }
+
     @Override
     public String toString() {
-        return "Skill{" + "title=" + title + '}';
+        return "Skill{" + "title=" + name + '}';
     }
     
     public int getCost()

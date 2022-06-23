@@ -4,22 +4,23 @@
  */
 package skillsmulator;
 
-import skillsmulator.Armor.Leg;
-import skillsmulator.Armor.Armor;
-import skillsmulator.Armor.Charm;
-import skillsmulator.Armor.Helm;
-import skillsmulator.Armor.Waist;
-import skillsmulator.Armor.Arm;
-import skillsmulator.Armor.Chest;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import skillsmulator.Armor.Arm;
+import skillsmulator.Armor.Armor;
+import skillsmulator.Armor.Charm;
+import skillsmulator.Armor.Chest;
+import skillsmulator.Armor.Helm;
+import skillsmulator.Armor.Leg;
+import skillsmulator.Armor.Waist;
 import skillsmulator.Skill.AffinityMultiplierSkill;
 import skillsmulator.Skill.AffinitySkill;
 import skillsmulator.Skill.DamageAffinityUpSkill;
+import skillsmulator.Skill.DamageMultiplierSkill;
 import skillsmulator.Skill.DamageUpMultiplePreSkill;
 import skillsmulator.Skill.DamageUpSkill;
 import skillsmulator.Skill.Skill;
@@ -50,25 +51,27 @@ public class Simulator {
     List<Equipment> equipments;
     
     public static final Skill attackBoost = 
-            new DamageUpMultiplePreSkill("AttackBoost", 2, new int[]{3, 6, 9, 7, 8, 9, 10}, new double[]{1, 1, 1, 1.05, 1.06, 1.08, 1.1});
+            new DamageUpMultiplePreSkill("攻撃", "攻撃珠", 2, new int[]{3, 6, 9, 7, 8, 9, 10}, new double[]{1, 1, 1, 1.05, 1.06, 1.08, 1.1});
     public static final Skill peakPerformance = 
-            new DamageUpSkill("PeakPerformance", 2, new int[]{5, 10, 20});
+            new DamageUpSkill("フルチャージ", "無傷珠", 2, new int[]{5, 10, 20});
     public static final Skill criticalEye = 
-            new AffinitySkill("CriticalEye", 2, new int[]{5, 10, 15, 20, 25, 30, 40});
+            new AffinitySkill("見切り", "達人珠", 2, new int[]{5, 10, 15, 20, 25, 30, 40});
     public static final Skill criticalBoost = 
-            new AffinityMultiplierSkill("CriticalBoost", 2, new double[]{1.3, 1.35, 1.4});
+            new AffinityMultiplierSkill("超会心", "超心珠", 2, new double[]{1.3, 1.35, 1.4});
     public static final Skill weaknessExploit = 
-            new AffinitySkill("WeaknessExploit", 2, new int[]{15, 30, 50});
+            new AffinitySkill("弱点特効", "痛撃珠", 2, new int[]{15, 30, 50});
     public static final Skill criticalDraw = 
-            new AffinitySkill("CriticalDraw", 3, new int[]{10, 20, 40});
+            new AffinitySkill("抜刀術【技】", "抜刀珠", 3, new int[]{10, 20, 40});
     public static final Skill maximumMight = 
-            new AffinitySkill("MaximumMight", 2, new int[]{10, 20, 30});
+            new AffinitySkill("渾身", "渾身珠", 2, new int[]{10, 20, 30});
     public static final Skill agitator = 
-            new DamageAffinityUpSkill("Agitator", 2, new int[]{4, 8, 12, 16, 20}, new int[]{3, 5, 7, 10, 15});
+            new DamageAffinityUpSkill("挑戦者", "挑戦珠", 2, new int[]{4, 8, 12, 16, 20}, new int[]{3, 5, 7, 10, 15});
     public static final Skill counterstrike = 
-            new DamageUpSkill("Counterstrike", 2, new int[]{10, 15, 25});
+            new DamageUpSkill("逆襲", "逆襲珠", 2, new int[]{10, 15, 25});
     public static final Skill punishingDraw = 
-            new DamageUpSkill("Counterstrike", 2, new int[]{3, 5, 7});
+            new DamageUpSkill("抜刀術【力】", "抜打珠", 2, new int[]{3, 5, 7});
+    public static final Skill offensiveGuard = 
+            new DamageMultiplierSkill("攻めの守勢", "守勢珠", 3, new double[]{1.05, 1.1, 1.15});
         
     public Simulator()
     {

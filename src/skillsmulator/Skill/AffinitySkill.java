@@ -13,8 +13,8 @@ import skillsmulator.Expectation;
 public class AffinitySkill extends AttackSkill implements AffinityUp{
     private final int[] affinitySequence;
 
-    public AffinitySkill(String title, int cost, int[] affinitySequence) {
-        super(title, affinitySequence.length, cost);
+    public AffinitySkill(String title, String decorationName, int cost, int[] affinitySequence) {
+        super(title, decorationName, affinitySequence.length, cost);
         this.affinitySequence = affinitySequence;
     }
 

@@ -10,18 +10,15 @@ import skillsmulator.Expectation;
  *
  * @author fes77
  */
-public class DamageUpMultiplePreSkill extends DamageUpSkill implements DamageMultiplier{
+public class DamageMultiplierSkill extends AttackSkill implements DamageMultiplier{
 
     private double[] multiplerSequece;
 
-    public DamageUpMultiplePreSkill(String title, String decorationName, int cost, int[] damageSequence, double[] multiplerSequece) {
-        super(title, decorationName, cost, damageSequence);
-        if(damageSequence.length != multiplerSequece.length)
-            throw new IllegalArgumentException("Length of damage and affinity sequence should match");
+    public DamageMultiplierSkill(String title, String decorationName, int cost, double[] multiplerSequece) {
+        super(title, decorationName, multiplerSequece.length, cost);
         this.multiplerSequece = multiplerSequece;
     }
-    
-    
+
     @Override
     public double getDamageMultiplier(int level) {
         if(level == 0)
@@ -31,7 +28,7 @@ public class DamageUpMultiplePreSkill extends DamageUpSkill implements DamageMul
     
     @Override
     public void editExpectation(Expectation exp, int level){
-        super.editExpectation(exp, level);
         exp.multiplyPre(getDamageMultiplier(level));
     }
+    
 }
