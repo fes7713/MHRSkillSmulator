@@ -213,20 +213,13 @@ public class Equipment implements Comparable<Equipment>{
         
         boolean flag = false;
         
-        // For smaller slot or zero slot
-//        if(remainingSlotCount <= skillSize)
-//        {
-//            decorations.put(keySkill, remainingSlotCount);
-//            flag = true;
-//        }
         
         // Reaching the end of skill list
         if(skillIndex == skillKeys.size() - 1)
         {
-            if(remainingSlotCount <= skillSize)
-            {
-                decorations.put(keySkill, remainingSlotCount);
-            }
+            // Assign remaining slots
+            decorations.put(keySkill, Math.min(remainingSlotCount, skillSize));
+            
             double currentExp = getExpectation();
 
             if(currentExp > bestExpectation)
