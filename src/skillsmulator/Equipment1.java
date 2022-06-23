@@ -19,13 +19,10 @@ import skillsmulator.Armor.Chest;
 import skillsmulator.Armor.Helm;
 import skillsmulator.Armor.Leg;
 import skillsmulator.Armor.Waist;
-import static skillsmulator.Simulator.agitator;
 import static skillsmulator.Simulator.attackBoost;
 import static skillsmulator.Simulator.criticalBoost;
 import static skillsmulator.Simulator.criticalEye;
-import static skillsmulator.Simulator.maximumMight;
 import static skillsmulator.Simulator.peakPerformance;
-import static skillsmulator.Simulator.weaknessExploit;
 import skillsmulator.Skill.AttackSkill;
 import skillsmulator.Skill.Skill;
 
@@ -33,7 +30,7 @@ import skillsmulator.Skill.Skill;
  *
  * @author fes77
  */
-public class Equipment implements Comparable<Equipment>{
+public class Equipment1 implements Comparable<Equipment1>{
     private Weapon weapon;
     private Armor helm;
     private Armor chest;
@@ -54,7 +51,7 @@ public class Equipment implements Comparable<Equipment>{
     private double bestExpectation;
     boolean calculated;
     
-    public Equipment(Weapon weapon, Helm helm, Chest chest, Arm arm, Waist waist, Leg leg, Charm charm){
+    public Equipment1(Weapon weapon, Helm helm, Chest chest, Arm arm, Waist waist, Leg leg, Charm charm){
         this.weapon = weapon;
         this.helm = helm;
         this.chest = chest;
@@ -177,7 +174,7 @@ public class Equipment implements Comparable<Equipment>{
         if(!slot2Skills.isEmpty())
         {
             bestExpectation = 0;
-            skillLooper(remainingSkills, slot2Skills, 0, availableSlots2 + availableSlots3, remainingSkillSum);
+//            skillLooper(remainingSkills, slot2Skills, 0, availableSlots2 + availableSlots3, remainingSkillSum);
             decorations = bestDecorations
                 .entrySet()
                 .stream()
@@ -200,68 +197,88 @@ public class Equipment implements Comparable<Equipment>{
     
     private void skillLooper(
             Map<Skill, Integer> skillSizeMap, 
-            List<Skill> skillKeys, 
+            List<Skill> slot3Skills, 
+            List<Skill> slot2Skills, 
+            int slotSearching,
             int skillIndex, 
-            int remainingSlotCount,
-            int remainingSkillSum)
+            int remainingSlot3Count,
+            int remainingSlot2Count,
+            int remainingSlot3SkillSum,
+            int remainingSlot2SkillSum)
     {
-        Skill keySkill = skillKeys.get(skillIndex);
+        List<Skill> skillKeys;
+        Skill keySkill;
+        int remainingSlotCount;
+        switch (slotSearching) {
+            case 2:
+                skillKeys = slot2Skills;
+                remainingSlotCount = remainingSlot3SkillSum + remainingSlot2SkillSum;
+                break;
+            case 3:
+                skillKeys = slot3Skills;
+                remainingSlotCount = remainingSlot3SkillSum;
+                break;
+            default:
+                throw new RuntimeException("Error with choosing slot");
+        }
+        
+        keySkill = skillKeys.get(skillIndex);
         int skillSize = skillSizeMap.get(keySkill);
         
         if(remainingSlotCount < 0)
             throw new RuntimeException("Negative slot");
         
-        boolean flag = false;
+        // WIP
+        if(remainingSlotCount <= skillSize)
+        {
+            decorations.put(keySkill, remainingSlotCount);
+        }
         
-        // For smaller slot or zero slot
-//        if(remainingSlotCount <= skillSize)
-//        {
+        if(slotSearching == 3 && remainingSlot2Count >= remainingSlot2SkillSum)
+        {
 //            decorations.put(keySkill, remainingSlotCount);
-//            flag = true;
-//        }
+            System.out.println("Check");
+        }
         
         // Reaching the end of skill list
         if(skillIndex == skillKeys.size() - 1)
         {
-            if(remainingSlotCount <= skillSize)
+            if(slotSearching == 3)
             {
-                decorations.put(keySkill, remainingSlotCount);
+                
             }
-            double currentExp = getExpectation();
+            else if (slotSearching == 2)
+            {
+                double currentExp = getExpectation();
 
-            if(currentExp > bestExpectation)
-            {
-                bestExpectation = currentExp;
-                setBestDecoration(decorations);
+                if(currentExp > bestExpectation)
+                {
+                    bestExpectation = currentExp;
+                    setBestDecoration(decorations);
+                }
+                return;
             }
-            return;
         }
         
         int skillLoopStart = 0;
         
         // All of available slots are pushed to the end so apply all of remaining slot to the rest of skills
         // Zero is not allowed.
-        if(remainingSlotCount > remainingSkillSum - skillSize)
-        {
-            //works
-            if(remainingSlotCount > remainingSkillSum)
-                throw new RuntimeException("Error detected");
-            int difference = remainingSlotCount - (remainingSkillSum - skillSize);
-            skillLoopStart = difference;
-            flag = false;
-        }
-        if(flag)
-            System.out.println("This is it");
-        
-
-        for(int i = skillLoopStart; i <= skillSize && i <= remainingSlotCount; i++)
-        {
-//            if(i != 0)
-            if(flag)
-                System.out.println("Entered");
-            decorations.put(keySkill, i);
-            skillLooper(skillSizeMap, skillKeys, skillIndex + 1, remainingSlotCount - i, remainingSkillSum - skillSize);
-        }
+//        if(remainingSlotCount > remainingSkillSum - skillSize)
+//        {
+//            //works
+//            if(remainingSlotCount > remainingSkillSum)
+//                throw new RuntimeException("Error detected");
+//            int difference = remainingSlotCount - (remainingSkillSum - skillSize);
+//            skillLoopStart = difference;
+//        }
+//        
+//        for(int i = skillLoopStart; i <= skillSize && i <= remainingSlotCount; i++)
+//        {
+////            if(i != 0)
+//            decorations.put(keySkill, i);
+//            skillLooper(skillSizeMap, skillKeys, skillIndex + 1, remainingSlotCount - i, remainingSkillSum - skillSize);
+//        }
     }
      
     
@@ -274,8 +291,6 @@ public class Equipment implements Comparable<Equipment>{
         
         Map<Skill, Integer> newSkills = getSkillMap();
 
-        int availableSlots3 = decoratables.stream().map(deco -> deco.getSlot3()).reduce(0, (a, b) -> a + b);
-        int availableSlots2 = decoratables.stream().map(deco -> deco.getSlot2()).reduce(0, (a, b) -> a + b);
         
         newSkills.keySet()
                 .stream()
@@ -287,7 +302,7 @@ public class Equipment implements Comparable<Equipment>{
     }
     
     @Override
-    public int compareTo(Equipment o) {
+    public int compareTo(Equipment1 o) {
         if(calculated)
             return (int)((getExpectation() - o.getExpectation()) * 100);
         return score - o.getScore();
@@ -322,74 +337,40 @@ public class Equipment implements Comparable<Equipment>{
     
     public static void main(String[] args)
     {
-        List<Skill>skills = new ArrayList();
 
-        skills.add(attackBoost);
-        skills.add(peakPerformance);
-        skills.add(criticalEye);
-        skills.add(criticalBoost);
-        skills.add(weaknessExploit);
-        skills.add(maximumMight);
-        skills.add(agitator);
+        Helm helm = new Helm("Helm", 1, 0, 1);
+        helm.addSkill(attackBoost, 2);
+        helm.addSkill(peakPerformance, 1);
+        Arm arm = new Arm("arm", 0, 0, 0);
+        arm.addSkill(criticalEye, 3);
+        arm.addSkill(criticalBoost, 1);
+        Waist waist = new Waist("waist", 0, 0, 0);
+        waist.addSkill(peakPerformance, 1);
+        waist.addSkill(criticalBoost, 1);
+        waist.addSkill(attackBoost, 1);
         
         
-        Weapon weapon = new Weapon("Sord", 200, 0);
-        Helm helm3 = new Helm("Helm3", 0, 5, 1);
-        helm3.addSkill(maximumMight, 1);
-
-        Chest chest = new Chest("Chest", 0, 1, 0);
+        Chest chest = new Chest("Chest", 0, 2, 2);
         chest.addSkill(criticalEye, 1);
         chest.addSkill(criticalBoost, 1);
-        Arm arm = new Arm("arm", 0, 0, 0);
-        arm.addSkill(attackBoost, 2);
-        Waist waist = new Waist("waist", 0, 2, 0);
-        waist.addSkill(criticalEye, 1);
-        Leg leg = new Leg("leg", 0, 0, 1);
-        leg.addSkill(peakPerformance, 1);
-        Charm charm = new Charm("charm", 0, 1, 2);
+        Leg leg = new Leg("leg", 0, 0, 0);
+        leg.addSkill(criticalEye, 2);
+        Charm charm = new Charm("charm", 0, 0, 0);
+        charm.addSkill(attackBoost, 1);
         charm.addSkill(criticalEye, 1);
         
-        Equipment equipment = new Equipment(weapon, helm3, chest, arm, waist, leg, charm);
-        equipment.updateBestDecoration(skills);
-        double exp = equipment.getExpectation();
-        System.out.println(exp);
+        Weapon weapon = new Weapon("Sord", 200, 0);
+//        peakPerformance.setActive(false);
+        Equipment1 equipment = new Equipment1(weapon, helm, chest, arm, waist, leg, charm);
+        
+        System.out.println("Skill Map" + equipment.getSkillMap());
+        System.out.println(equipment.getExpectation());
+        equipment.updateBestDecoration(attackBoost, peakPerformance, criticalBoost, criticalEye);
+        System.out.println(equipment.getExpectation());
+        System.out.println("Skill Map" + equipment.getSkillMap());
+        System.out.println(equipment);
+        System.out.println(equipment.getExpectation());
     }
-//    public static void main(String[] args)
-//    {
-//
-//        Helm helm = new Helm("Helm", 1, 0, 1);
-//        helm.addSkill(attackBoost, 2);
-//        helm.addSkill(peakPerformance, 1);
-//        Arm arm = new Arm("arm", 0, 0, 0);
-//        arm.addSkill(criticalEye, 3);
-//        arm.addSkill(criticalBoost, 1);
-//        Waist waist = new Waist("waist", 0, 0, 0);
-//        waist.addSkill(peakPerformance, 1);
-//        waist.addSkill(criticalBoost, 1);
-//        waist.addSkill(attackBoost, 1);
-//        
-//        
-//        Chest chest = new Chest("Chest", 0, 2, 2);
-//        chest.addSkill(criticalEye, 1);
-//        chest.addSkill(criticalBoost, 1);
-//        Leg leg = new Leg("leg", 0, 0, 0);
-//        leg.addSkill(criticalEye, 2);
-//        Charm charm = new Charm("charm", 0, 0, 0);
-//        charm.addSkill(attackBoost, 1);
-//        charm.addSkill(criticalEye, 1);
-//        
-//        Weapon weapon = new Weapon("Sord", 200, 0);
-////        peakPerformance.setActive(false);
-//        Equipment equipment = new Equipment(weapon, helm, chest, arm, waist, leg, charm);
-//        
-//        System.out.println("Skill Map" + equipment.getSkillMap());
-//        System.out.println(equipment.getExpectation());
-//        equipment.updateBestDecoration(attackBoost, peakPerformance, criticalBoost, criticalEye);
-//        System.out.println(equipment.getExpectation());
-//        System.out.println("Skill Map" + equipment.getSkillMap());
-//        System.out.println(equipment);
-//        System.out.println(equipment.getExpectation());
-//    }
 
     
 }
