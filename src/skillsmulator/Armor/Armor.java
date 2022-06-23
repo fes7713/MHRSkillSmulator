@@ -2,11 +2,13 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package skillsmulator;
+package skillsmulator.Armor;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import skillsmulator.Decoratable;
+import skillsmulator.Decoratable;
 import skillsmulator.Skill.AffinitySkill;
 import skillsmulator.Skill.AttackSkill;
 import skillsmulator.Skill.DamageUpMultiplePreSkill;
@@ -17,7 +19,7 @@ import skillsmulator.Skill.Skill;
  *
  * @author fes77
  */
-public class Armor implements Comparable<Armor>, Decoratable{
+public abstract class Armor implements Comparable<Armor>, Decoratable{
     private final String title;
     private final Map<Skill, Integer> skills;
     private int slot1;
@@ -81,13 +83,17 @@ public class Armor implements Comparable<Armor>, Decoratable{
     
     public void addSkill(Skill skill, int level)
     {
-        if(level < 0)
+        if(level <= 0)
             throw new IllegalArgumentException("Level should be mor than 0 in code");
         
         if(level > skill.getMax())
-            level = skill.getMax() - 1;
+            level = skill.getMax();
         skills.put(skill, level);
         updateScore();
+    }
+
+    public String getName() {
+        return title;
     }
     
     public int getScore()
@@ -252,12 +258,12 @@ public class Armor implements Comparable<Armor>, Decoratable{
         Skill criticalEye = new AffinitySkill("CriticalEye", 2, new int[]{5, 10, 15, 20, 25, 30, 40});
         
         
-        Armor armor = new Armor("Helm", 0, 2, 1);
+        Armor armor = new Helm("Helm", 0, 2, 1);
         armor.addSkill(attackBoost, 4);
         armor.addSkill(peakPerformance, 2);
         armor.addSkill(criticalEye, 4);
         
-        Armor armor1 = new Armor("Helm1", 1, 1, 1);
+        Armor armor1 = new Helm("Helm1", 1, 1, 1);
         armor1.addSkill(attackBoost, 4);
         armor1.addSkill(peakPerformance, 2);
         armor1.addSkill(criticalEye, 2);

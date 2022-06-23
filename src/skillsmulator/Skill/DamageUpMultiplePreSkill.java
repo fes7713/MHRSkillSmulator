@@ -24,7 +24,9 @@ public class DamageUpMultiplePreSkill extends DamageUpSkill implements DamageMul
     
     @Override
     public double getDamageMultiplier(int level) {
-        return multiplerSequece[level];
+        if(level == 0)
+            return 1;
+        return multiplerSequece[level - 1];
     }
     
     @Override

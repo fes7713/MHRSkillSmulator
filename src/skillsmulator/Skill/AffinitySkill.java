@@ -20,7 +20,9 @@ public class AffinitySkill extends AttackSkill implements AffinityUp{
 
     @Override
     public int getAffinityUp(int level) {
-        return affinitySequence[level];
+        if(level == 0)
+            return 0;
+        return affinitySequence[level - 1];
     }
 
     @Override

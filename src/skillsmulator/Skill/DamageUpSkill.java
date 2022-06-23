@@ -20,7 +20,9 @@ public class DamageUpSkill extends AttackSkill implements DamageUp{
     
     @Override
     public int getDamageUp(int level) {
-        return damageSequence[level];
+        if(level == 0)
+            return 0;
+        return damageSequence[level - 1];
     }
     
     @Override

@@ -20,7 +20,9 @@ public class AffinityMultiplierSkill extends AttackSkill implements AffinityMult
 
     @Override
     public double getAffinityMultiplier(int level) {
-        return multiplierSequence[level];
+        if(level == 0)
+            return 1.25;
+        return multiplierSequence[level - 1];
     }
 
     @Override

@@ -27,12 +27,16 @@ public class DamageAffinityUpSkill extends AttackSkill implements DamageUp, Affi
     
     @Override
     public int getDamageUp(int level) {
-        return damageSequence[level];
+        if(level == 0)
+            return 0;
+        return damageSequence[level - 1];
     }
 
     @Override
     public int getAffinityUp(int level) {
-        return affinitySequence[level];
+        if(level == 0)
+            return 0;
+        return affinitySequence[level - 1];
     }
 
     @Override
