@@ -14,7 +14,7 @@ public class AffinityMultiplierSkill extends AttackSkill implements AffinityMult
     private double[] multiplierSequence;
 
     public AffinityMultiplierSkill(String title, String decorationName, int cost, double[] multiplierSequence) {
-        super(title, decorationName, multiplierSequence.length, cost);
+        super(title, decorationName, cost, multiplierSequence.length);
         this.multiplierSequence = multiplierSequence;
     }
 

@@ -14,7 +14,7 @@ public class AffinitySkill extends AttackSkill implements AffinityUp{
     private final int[] affinitySequence;
 
     public AffinitySkill(String title, String decorationName, int cost, int[] affinitySequence) {
-        super(title, decorationName, affinitySequence.length, cost);
+        super(title, decorationName, cost, affinitySequence.length);
         this.affinitySequence = affinitySequence;
     }
 

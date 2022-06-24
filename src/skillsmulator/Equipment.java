@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javafx.beans.property.SimpleDoubleProperty;
 import skillsmulator.Armor.Arm;
 import skillsmulator.Armor.Armor;
 import skillsmulator.Armor.Charm;
@@ -49,11 +50,12 @@ public class Equipment implements Comparable<Equipment>{
     private int score;
 
     private Map<Skill, Integer> skills;
-    private Map<Skill, Integer> specifiedSkills;
+    private Map<Skill, Integer> requiredSkills;
     
     private Map<Skill, Integer> decorations;
     private Map<Skill, Integer> bestDecorations;
-    private double bestExpectation;
+//    private double bestExpectation;
+    private SimpleDoubleProperty bestExpectation;
     boolean calculated;
     
     public Equipment(Weapon weapon, Helm helm, Chest chest, Arm arm, Waist waist, Leg leg, Charm charm){
@@ -73,6 +75,7 @@ public class Equipment implements Comparable<Equipment>{
         skills = findSkillMap();
         decorations = new HashMap();
         bestDecorations = new HashMap<>();
+        bestExpectation = new SimpleDoubleProperty(0);
         updateScore();
     }
 
@@ -124,6 +127,15 @@ public class Equipment implements Comparable<Equipment>{
 //        this.charm = charm;
     }
    
+    public SimpleDoubleProperty getBestExDoubleProperty()
+    {
+        return bestExpectation;
+    }
+    
+    public void setBestExpectation(double value)
+    {
+        bestExpectation.set(value);
+    }
     
     private Map<Skill, Integer> findSkillMap()
     {
@@ -161,7 +173,10 @@ public class Equipment implements Comparable<Equipment>{
     }
     
     public Map<Skill, Integer> getBestDecorationMap() {
-        return bestDecorations;
+        return Stream
+                .of(bestDecorations, requiredSkills)
+                .flatMap(m -> m.entrySet().stream())
+                .collect(Collectors.groupingBy(Entry::getKey, Collectors.summingInt(Entry::getValue)));
     }
     
     public Map<Skill, Integer> getSkillMap()
@@ -178,7 +193,7 @@ public class Equipment implements Comparable<Equipment>{
                                 Entry::getValue
                         )
                 );
-        return Stream.of(decorationsArranged, skills)
+        return Stream.of(decorationsArranged, skills, requiredSkills)
                 .flatMap(m -> m.entrySet().stream())
                 .collect(Collectors.groupingBy(Entry::getKey, Collectors.summingInt(Entry::getValue)));
 //        return skillsCombined;
@@ -195,8 +210,13 @@ public class Equipment implements Comparable<Equipment>{
         updateBestDecoration(Arrays.asList(activeSkills));
     }
     
-    public void updateBestDecoration(List<Skill> activeSkills)
+    public boolean updateBestDecoration(List<Skill> activeSkills)
     {
+        calculated = false;
+        bestExpectation.set(0);
+        bestDecorations.clear();
+        decorations.clear();
+        
         activeSkills = activeSkills.stream().filter(Skill::isActive).toList();
         
         int availableSlots3 = decoratables.stream().map(deco -> deco.getSlot3()).reduce(0, (a, b) -> a + b);
@@ -206,6 +226,63 @@ public class Equipment implements Comparable<Equipment>{
 //        System.out.println("avbailableSlots3 : " + availableSlots3);
 //        System.out.println("avbailableSlots2 : " + availableSlots2);
 //        System.out.println("avbailableSlots1 : " + availableSlots1);
+        
+        requiredSkills = Simulator.getAllSkills()
+                .stream()
+                .filter(skill -> skill.getRequired() - skills.getOrDefault(skill, 0) > 0)
+                .collect(Collectors.toMap(
+                        skill->skill, 
+                        skill->skill.getRequired() - skills.getOrDefault(skill, 0))
+                );
+        
+        int requiredSlot3Count = requiredSkills
+                .entrySet()
+                .stream()
+                .filter(entry -> entry.getKey().getCost() == 3)
+                .map(Entry::getValue)
+                .filter(x -> x > 0)
+                .reduce(0, Integer::sum);
+        
+        int requiredSlot2Count = requiredSkills
+                .entrySet()
+                .stream()
+                .filter(entry -> entry.getKey().getCost() == 2)
+                .map(Entry::getValue)
+                .filter(x -> x > 0)
+                .reduce(0, Integer::sum);
+        
+        int requiredSlot1Count = requiredSkills
+                .entrySet()
+                .stream()
+                .filter(entry -> entry.getKey().getCost() == 1)
+                .map(Entry::getValue)
+                .filter(x -> x > 0)
+                .reduce(0, Integer::sum);
+        
+        if(requiredSlot3Count + requiredSlot2Count + requiredSlot1Count <= availableSlots3 + availableSlots2 + availableSlots1)
+        {
+            if(requiredSlot3Count + requiredSlot2Count <= availableSlots3 + availableSlots2)
+            {
+                if(requiredSlot3Count <= availableSlots3)
+                {
+                    int x_1 = availableSlots3 - requiredSlot3Count;
+                    int y_1 = Math.max(availableSlots2 - requiredSlot2Count, 0);
+                    int x_2 = x_1 - (requiredSlot2Count - (availableSlots2 - y_1));
+                    int z_1 = Math.max(availableSlots1 - requiredSlot1Count, 0);
+                    int y_2 = Math.max(y_1 - (requiredSlot1Count - (availableSlots1 - z_1)), 0);
+                    int x_3 = x_2 -((requiredSlot1Count - (availableSlots1 - z_1)) - (y_1 - y_2));
+                    availableSlots3 =  x_3;
+                    availableSlots2 = y_2;
+                    availableSlots1 = z_1;
+                }
+                else
+                    return false;
+            }
+            else
+                return false;
+        }
+        else
+            return false;
         
         
         List<Skill> slot3Skills = activeSkills
@@ -235,6 +312,12 @@ public class Equipment implements Comparable<Equipment>{
                 .filter(skill -> !remainingSkills.containsKey(skill))
                 .forEach(skill -> remainingSkills.put(skill, skill.getMax()));
         
+        requiredSkills
+                .keySet()
+                .stream()
+                .filter(skill -> remainingSkills.containsKey(skill))
+                .forEach(skill -> remainingSkills.put(skill, remainingSkills.get(skill) - requiredSkills.get(skill)));
+        
         int remainingSlot3SkillSum = remainingSkills
                 .entrySet()
                 .stream()
@@ -248,9 +331,12 @@ public class Equipment implements Comparable<Equipment>{
                 .map(Entry::getValue)
                 .reduce(0, Integer::sum);
         
-        if(!slot2Skills.isEmpty())
-        {
-            bestExpectation = 0;
+        
+        
+//        if(!slot2Skills.isEmpty())
+//        {
+            bestExpectation.set(0);
+            bestDecorations.clear();
             skillLooper(
                     remainingSkills, 
                     slot3Skills, 
@@ -272,7 +358,8 @@ public class Equipment implements Comparable<Equipment>{
                         )
                 );
             calculated = true;
-        }
+//        }
+        return true;
     }
     
     private void setBestDecoration(Map<Skill, Integer> decorations)
@@ -335,9 +422,9 @@ public class Equipment implements Comparable<Equipment>{
                 decorations.put(keySkill, Math.min(remainingSlotCount, skillSize));
                 double currentExp = getExpectation();
 
-                if(currentExp > bestExpectation)
+                if(currentExp > bestExpectation.get())
                 {
-                    bestExpectation = currentExp;
+                    bestExpectation.set(currentExp);
                     setBestDecoration(decorations);
                 }
                 return;
@@ -406,8 +493,8 @@ public class Equipment implements Comparable<Equipment>{
     
     public double getExpectation()
     {
-//        if(calculated)
-//            return bestExpectation;
+        if(calculated)
+            return bestExpectation.get();
         Expectation exp = new Expectation(weapon);
         
         Map<Skill, Integer> newSkills = getSkillMap();
@@ -460,6 +547,7 @@ public class Equipment implements Comparable<Equipment>{
     
     public static void main(String[] args)
     {
+        
         List<Skill>skills = new ArrayList();
 
         skills.add(attackBoost);
@@ -474,7 +562,7 @@ public class Equipment implements Comparable<Equipment>{
         
         
         Weapon weapon = new Weapon("Sord", 200, 0);
-        Helm helm3 = new Helm("Helm3", 4, 2, 1);
+        Helm helm3 = new Helm("Helm3", 0, 2, 1);
         helm3.addSkill(maximumMight, 1);
 
         Chest chest = new Chest("Chest", 0, 1, 0);

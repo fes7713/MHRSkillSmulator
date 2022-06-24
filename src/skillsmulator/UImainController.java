@@ -10,6 +10,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.ResourceBundle;
+import java.util.stream.Collectors;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -33,13 +36,20 @@ import skillsmulator.Armor.Leg;
 import skillsmulator.Armor.Waist;
 import static skillsmulator.Simulator.agitator;
 import static skillsmulator.Simulator.attackBoost;
+import static skillsmulator.Simulator.counterstrike;
 import static skillsmulator.Simulator.criticalBoost;
 import static skillsmulator.Simulator.criticalDraw;
 import static skillsmulator.Simulator.criticalEye;
+import static skillsmulator.Simulator.heroics;
+import static skillsmulator.Simulator.latentPower;
 import static skillsmulator.Simulator.maximumMight;
 import static skillsmulator.Simulator.offensiveGuard;
 import static skillsmulator.Simulator.peakPerformance;
+import static skillsmulator.Simulator.punishingDraw;
+import static skillsmulator.Simulator.resentment;
+import static skillsmulator.Simulator.resuscitate;
 import static skillsmulator.Simulator.weaknessExploit;
+import skillsmulator.Skill.AttackSkill;
 import skillsmulator.Skill.Skill;
 
 /**
@@ -47,13 +57,15 @@ import skillsmulator.Skill.Skill;
  * @author fes77
  */
 public class UImainController implements Initializable {
+    List<Skill> skillList;
     
     @FXML
     private Label label;
     
     @FXML
     private ComboBox<Integer> combobox;
-    
+    private ObjectProperty<Integer> selectedData;
+
     @FXML
     private LineChart chart;
     
@@ -76,11 +88,7 @@ public class UImainController implements Initializable {
     @FXML
     private CheckBox OffensiveGuardBox;
     @FXML
-    private CheckBox FortifyBox;
-    @FXML
     private CheckBox HeroicsBox;
-    @FXML
-    private CheckBox DragonheartBox;
     @FXML
     private CheckBox AgitatorBox;
     @FXML
@@ -97,16 +105,14 @@ public class UImainController implements Initializable {
     private CheckBox MaximumMightBox;
     @FXML
     private CheckBox LatentPowerBox;
-    @FXML
-    private CheckBox AffinitySlidingBox;
 
     
     
-    private ObservableList<Equipment> tableData;
+    private ObservableList<Equipment> equipmentData;
     @FXML 
     private TableView equipmentTable;
     @FXML 
-    private TableColumn attackCol;
+    private TableColumn<Equipment, Double> attackCol;
     @FXML 
     private TableColumn helmCol;
     @FXML 
@@ -139,17 +145,35 @@ public class UImainController implements Initializable {
     private TableColumn decorationLevelCol;
     
     
-    
-    
     @FXML
     private void handleButtonAction(ActionEvent event) {
-        
-         
+        System.out.println(attackBoost.getRequired());
+        updateBestDecorations();
+        System.out.println("Updated");
+    }
+    
+    @FXML
+    private void updateBestDecorations() {
+        List<Skill> activeSkills = skillList
+                    .stream()
+                    .filter(AttackSkill.class::isInstance)
+                    .filter(Skill::isActive)
+                    .toList();
+        for(Equipment e: equipmentData)
+        {
+            e.updateBestDecoration(activeSkills);
+        }
    }
     
     @FXML
     private void updateSkillList(Equipment e) {
         Map<Skill, Integer> skills = e.getSkillMap();
+        Map<Skill, Integer> decorations = e.getBestDecorationMap()
+                .entrySet()
+                .stream()
+                .filter(entry -> entry.getValue() != 0)
+                .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+        
         skillData.clear();
         decorationData.clear();
         
@@ -160,7 +184,7 @@ public class UImainController implements Initializable {
             
         }
         
-        for(Entry<Skill, Integer> entry : e.getBestDecorationMap().entrySet())
+        for(Entry<Skill, Integer> entry : decorations.entrySet())
         {
             decorationData.add(new SkillItem(entry.getKey(), entry.getValue()));
         }
@@ -169,10 +193,12 @@ public class UImainController implements Initializable {
     
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-        tableData = FXCollections.observableArrayList();
+//        button.setOnAction(this::onClick);
+        skillList = Simulator.getAllSkills();
+        equipmentData = FXCollections.observableArrayList();
 
-        equipmentTable.itemsProperty().setValue(tableData);
-        equipmentTable.setItems(tableData);
+        equipmentTable.itemsProperty().setValue(equipmentData);
+        equipmentTable.setItems(equipmentData);
         equipmentTable.setRowFactory(tv -> {
             TableRow<Equipment> row = new TableRow<>();
             row.setOnMouseClicked(event -> {
@@ -184,7 +210,7 @@ public class UImainController implements Initializable {
             return row ;
         });
     
-        attackCol.setCellValueFactory(new PropertyValueFactory<Equipment, Double>("expectation"));
+        attackCol.setCellValueFactory(e -> e.getValue().getBestExDoubleProperty().asObject());
         helmCol.setCellValueFactory(new PropertyValueFactory<Equipment, String>("helm"));
         chestCol.setCellValueFactory(new PropertyValueFactory<Equipment, String>("chest"));
         armCol.setCellValueFactory(new PropertyValueFactory<Equipment, String>("arm"));
@@ -201,16 +227,31 @@ public class UImainController implements Initializable {
         
         // Decoration Data
         decorationData = FXCollections.observableArrayList();
-        decorationlTable.itemsProperty().setValue(skillData);
-        decorationlTable.setItems(skillData);
+        decorationlTable.itemsProperty().setValue(decorationData);
+        decorationlTable.setItems(decorationData);
         decorationNameCol.setCellValueFactory(new PropertyValueFactory<SkillItem, String>("decoration"));
         decorationLevelCol.setCellValueFactory(new PropertyValueFactory<SkillItem, Integer>("level"));
         
-        
+        combobox.getItems().add(0);
         combobox.getItems().add(1);
         combobox.getItems().add(2);
         combobox.getItems().add(3);
+        combobox.setValue(0);
         
+//        combobox.setConverter();
+
+        selectedData = new SimpleObjectProperty<>();
+        Simulator.masterTouch.requiredProperty().bind(combobox.getSelectionModel().selectedItemProperty());
+//        lblCmbBoxSelected.textProperty().bind(selectedData.asString());
+
+        combobox.getSelectionModel().selectedItemProperty().addListener((r,o,newValue) -> {
+//            if (newValue == null){
+//                lblCmbBox.textProperty().set("選択なし");
+//            } else {
+//                lblCmbBox.textProperty().set(newValue.getTitle());
+//            }
+        });
+    
 //        lineChart.setTitle("Stock Monitoring, 2010");
         //defining a series
         XYChart.Series series = new XYChart.Series();
@@ -231,26 +272,39 @@ public class UImainController implements Initializable {
         
 
         chart.getData().add(series);
-        AffinitySlidingBox.setSelected(true);
+        
+        
+        AttackBoostBox.selectedProperty().bindBidirectional(attackBoost.activeProperty());
+        AgitatorBox.selectedProperty().bindBidirectional(agitator.activeProperty());
+        CounterstrikeBox.selectedProperty().bindBidirectional(counterstrike.activeProperty());
+        CriticalBoostBox.selectedProperty().bindBidirectional(criticalBoost.activeProperty());
+        CriticalDrawBox.selectedProperty().bindBidirectional(criticalDraw.activeProperty());
+        CriticalEyeBox.selectedProperty().bindBidirectional(criticalEye.activeProperty());
+        HeroicsBox.selectedProperty().bindBidirectional(heroics.activeProperty());
+        LatentPowerBox.selectedProperty().bindBidirectional(latentPower.activeProperty());
+        MaximumMightBox.selectedProperty().bindBidirectional(maximumMight.activeProperty());
+        OffensiveGuardBox.selectedProperty().bindBidirectional(offensiveGuard.activeProperty());
+        PeakPerformanceBox.selectedProperty().bindBidirectional(peakPerformance.activeProperty());
+        PunishingDrawBox.selectedProperty().bindBidirectional(punishingDraw.activeProperty());
+        ResentmentBox.selectedProperty().bindBidirectional(resentment.activeProperty());
+        ResuscitateBox.selectedProperty().bindBidirectional(resuscitate.activeProperty());
+        WeaknessExploitBox.selectedProperty().bindBidirectional(weaknessExploit.activeProperty());
+        
         AgitatorBox.setSelected(true);
         AttackBoostBox.setSelected(true);
-        CounterstrikeBox.setSelected(true);
+        CounterstrikeBox.setSelected(false);
         CriticalBoostBox.setSelected(true);
-        CriticalDrawBox.setSelected(true);
+        CriticalDrawBox.setSelected(false);
         CriticalEyeBox.setSelected(true);
-        DragonheartBox.setSelected(true);
-        FortifyBox.setSelected(true);
-        HeroicsBox.setSelected(true);
-        LatentPowerBox.setSelected(true);
+        HeroicsBox.setSelected(false);
+        LatentPowerBox.setSelected(false);
         MaximumMightBox.setSelected(true);
-        OffensiveGuardBox.setSelected(true);
+        OffensiveGuardBox.setSelected(false);
         PeakPerformanceBox.setSelected(true);
-        PunishingDrawBox.setSelected(true);
-        ResentmentBox.setSelected(true);
-        ResuscitateBox.setSelected(true);
+        PunishingDrawBox.setSelected(false);
+        ResentmentBox.setSelected(false);
+        ResuscitateBox.setSelected(false);
         WeaknessExploitBox.setSelected(true);
-        
-        
   
         
         List<Skill>skills = new ArrayList();
@@ -268,7 +322,7 @@ public class UImainController implements Initializable {
         
         Weapon weapon = new Weapon("Sord", 200, 0);
         Weapon weapon1 = new Weapon("Sord", 200, 0);
-        Helm helm3 = new Helm("Helm3", 4, 2, 1);
+        Helm helm3 = new Helm("Helm3", 0, 5, 1);
         helm3.addSkill(maximumMight, 1);
 
         Chest chest = new Chest("Chest", 0, 1, 0);
@@ -283,9 +337,23 @@ public class UImainController implements Initializable {
         Charm charm = new Charm("charm", 0, 1, 2);
         charm.addSkill(criticalEye, 1);
         
-        Equipment equipment = new Equipment(weapon, helm3, chest, arm, waist, leg, charm);
-        tableData.add(equipment);
-        Equipment equipment1 = new Equipment(weapon1, helm3, chest, arm, waist, leg, charm);
-        tableData.add(equipment1);
+//        Equipment equipment = new Equipment(weapon, helm3, chest, arm, waist, leg, charm);
+//        equipmentData.add(equipment);
+//        Equipment equipment1 = new Equipment(weapon1, helm3, chest, arm, waist, leg, charm);
+//        equipmentData.add(equipment1);
+        
+        Simulator sim = new Simulator(equipmentData);
+        sim.addHelm(helm3);
+        sim.addChest(chest);
+        sim.addArm(arm);
+        sim.addWaist(waist);
+        sim.addLeg(leg);
+        sim.addCharm(charm);
+        
+        sim.run();
+        
+        
+    
+        
     }    
 }

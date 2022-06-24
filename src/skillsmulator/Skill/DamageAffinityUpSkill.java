@@ -15,7 +15,7 @@ public class DamageAffinityUpSkill extends AttackSkill implements DamageUp, Affi
     private final int[] affinitySequence;
 
     public DamageAffinityUpSkill(String title, String decorationName, int cost, int[] damageSequence, int[] affinitySequence) {
-        super(title, decorationName, damageSequence.length, cost);
+        super(title, decorationName, cost, damageSequence.length);
         if(damageSequence.length != affinitySequence.length)
             throw new IllegalArgumentException("Length of damage and affinity sequence should match");
         

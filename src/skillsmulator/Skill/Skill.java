@@ -4,6 +4,10 @@
  */
 package skillsmulator.Skill;
 
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+
 /**
  *
  * @author fes77
@@ -13,22 +17,31 @@ public class Skill {
     private String decorationName;
     protected int maxLevel;
     private int cost;
-    boolean active;
 
+    private SimpleIntegerProperty required;
+    
+    BooleanProperty activeProperty;
 
-    public Skill(String name, String decorationName,  int maxLevel, int cost) {
+    public Skill(String name, String decorationName, int cost, int maxLevel) {
         if(maxLevel <= 0)
             throw new IllegalArgumentException("Skill max level should be more than 0");
         this.name = name;
         this.decorationName = decorationName;
         this.maxLevel = maxLevel;
         this.cost = cost;
-        active = true;
+ 
+        activeProperty = new SimpleBooleanProperty(true);
+        required = new SimpleIntegerProperty(0);
+    }
+    
+    public BooleanProperty activeProperty()
+    {
+        return activeProperty;
     }
     
     public void setActive(boolean active)
     {
-        this.active = active;
+        activeProperty.set(active);
     }
     
     public int getMax()
@@ -51,13 +64,31 @@ public class Skill {
     
     public int getCost()
     {
-        if(active)
+        if(activeProperty.get())
             return cost;
         else
             return 0;
     }
 
     public boolean isActive() {
-        return active;
+        return activeProperty.get();
+    }
+
+    public int getRequired() {
+        return required.get();
+    }
+
+    public void setRequired(int required) {
+        if(required <= 0)
+            this.required.set(0);
+        else if(required >= maxLevel)
+            this.required.set(maxLevel);
+        else
+            this.required.set(required);
+    }
+    
+    public SimpleIntegerProperty requiredProperty()
+    {
+        return required;
     }
 }

@@ -15,7 +15,7 @@ public class DamageMultiplierSkill extends AttackSkill implements DamageMultipli
     private double[] multiplerSequece;
 
     public DamageMultiplierSkill(String title, String decorationName, int cost, double[] multiplerSequece) {
-        super(title, decorationName, multiplerSequece.length, cost);
+        super(title, decorationName, cost, multiplerSequece.length);
         this.multiplerSequece = multiplerSequece;
     }
 

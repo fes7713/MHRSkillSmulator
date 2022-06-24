@@ -14,7 +14,7 @@ public class DamageUpSkill extends AttackSkill implements DamageUp{
     private final int[] damageSequence;
 
     public DamageUpSkill(String title, String decorationName, int cost, int[] damageSequence) {
-        super(title, decorationName, damageSequence.length, cost);
+        super(title, decorationName, cost, damageSequence.length);
         this.damageSequence = damageSequence;
     }
     
