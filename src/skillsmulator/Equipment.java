@@ -205,9 +205,13 @@ public class Equipment implements Comparable<Equipment>{
         score = armorList.stream().map(Armor::getScore).reduce(0, Integer::sum);
     }
     
-    public void updateBestDecoration(Skill... activeSkills)
+    public boolean updateBestDecoration(Skill... activeSkills)
     {
-        updateBestDecoration(Arrays.asList(activeSkills));
+        return updateBestDecoration(Arrays.asList(activeSkills));
+    }
+    public boolean updateBestDecoration()
+    {
+        return updateBestDecoration(Simulator.ALL_ATTACK_SKILLS);
     }
     
     public boolean updateBestDecoration(List<Skill> activeSkills)
@@ -217,7 +221,11 @@ public class Equipment implements Comparable<Equipment>{
         bestDecorations.clear();
         decorations.clear();
         
-        activeSkills = activeSkills.stream().filter(Skill::isActive).toList();
+        activeSkills = activeSkills
+                .stream()
+                .filter(AttackSkill.class::isInstance)
+                .filter(Skill::isActive)
+                .toList();
         
         int availableSlots3 = decoratables.stream().map(deco -> deco.getSlot3()).reduce(0, (a, b) -> a + b);
         int availableSlots2 = decoratables.stream().map(deco -> deco.getSlot2()).reduce(0, (a, b) -> a + b);
@@ -227,7 +235,7 @@ public class Equipment implements Comparable<Equipment>{
 //        System.out.println("avbailableSlots2 : " + availableSlots2);
 //        System.out.println("avbailableSlots1 : " + availableSlots1);
         
-        requiredSkills = Simulator.getAllSkills()
+        requiredSkills = Simulator.ALL_SKILLS
                 .stream()
                 .filter(skill -> skill.getRequired() - skills.getOrDefault(skill, 0) > 0)
                 .collect(Collectors.toMap(
@@ -289,33 +297,39 @@ public class Equipment implements Comparable<Equipment>{
                 .stream()
                 .filter(AttackSkill.class::isInstance)
                 .filter(skill -> skill.getCost() == 3)
-                .toList();
+                .collect(Collectors.toList());
         List<Skill> slot2Skills = activeSkills
                 .stream()
                 .filter(AttackSkill.class::isInstance)
                 .filter(skill -> skill.getCost() == 2)
-                .toList();
+                .collect(Collectors.toList());
         
 //        System.out.println("slot3Skills" + slot3Skills);
 //        System.out.println("slot2Skills" + slot2Skills);
         
-        Map<Skill, Integer> remainingSkills = skills.entrySet()
+        Map<AttackSkill, Integer> remainingSkills = skills.keySet()
                 .stream()
+                .filter(AttackSkill.class::isInstance)
+                .map(AttackSkill.class::cast)
                 .collect(
                         Collectors.toMap(
-                                Entry::getKey, 
-                                entry -> entry.getKey().getMax() - entry.getValue()
+                                key->key, 
+                                key -> key.getMax() - skills.get(key)
                         )
                 );
         activeSkills
                 .stream()
                 .filter(skill -> !remainingSkills.containsKey(skill))
+                .filter(AttackSkill.class::isInstance)
+                .map(AttackSkill.class::cast)
                 .forEach(skill -> remainingSkills.put(skill, skill.getMax()));
         
         requiredSkills
                 .keySet()
                 .stream()
                 .filter(skill -> remainingSkills.containsKey(skill))
+                .filter(AttackSkill.class::isInstance)
+                .map(AttackSkill.class::cast)
                 .forEach(skill -> remainingSkills.put(skill, remainingSkills.get(skill) - requiredSkills.get(skill)));
         
         int remainingSlot3SkillSum = remainingSkills
@@ -324,6 +338,8 @@ public class Equipment implements Comparable<Equipment>{
                 .filter(entry -> entry.getKey().getCost() == 3)
                 .map(Entry::getValue)
                 .reduce(0, Integer::sum);
+        if(slot3Skills.size() == 0 && remainingSlot3SkillSum != 0)
+            System.out.println("Heere");
         int remainingSlot2SkillSum = remainingSkills
                 .entrySet()
                 .stream()
@@ -369,7 +385,7 @@ public class Equipment implements Comparable<Equipment>{
     }
     
      private void skillLooper(
-            Map<Skill, Integer> skillSizeMap, 
+            Map<AttackSkill, Integer> skillSizeMap, 
             List<Skill> slot3Skills, 
             List<Skill> slot2Skills, 
             int slotSearching,

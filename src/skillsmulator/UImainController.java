@@ -5,15 +5,19 @@
 package skillsmulator;
 
 import java.net.URL;
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleObjectProperty;
+import java.util.stream.IntStream;
+import javafx.application.Platform;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -24,16 +28,22 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
-import skillsmulator.Armor.Arm;
+import javafx.scene.layout.GridPane;
 import skillsmulator.Armor.Charm;
-import skillsmulator.Armor.Chest;
-import skillsmulator.Armor.Helm;
-import skillsmulator.Armor.Leg;
-import skillsmulator.Armor.Waist;
+import static skillsmulator.DataLoader.LoadArmData;
+import static skillsmulator.DataLoader.LoadCharmData;
+import static skillsmulator.DataLoader.LoadChestData;
+import static skillsmulator.DataLoader.LoadHelmData;
+import static skillsmulator.DataLoader.LoadLegData;
+import static skillsmulator.DataLoader.LoadWaistData;
+import static skillsmulator.DataLoader.createFile;
 import static skillsmulator.Simulator.agitator;
 import static skillsmulator.Simulator.attackBoost;
 import static skillsmulator.Simulator.counterstrike;
@@ -49,7 +59,6 @@ import static skillsmulator.Simulator.punishingDraw;
 import static skillsmulator.Simulator.resentment;
 import static skillsmulator.Simulator.resuscitate;
 import static skillsmulator.Simulator.weaknessExploit;
-import skillsmulator.Skill.AttackSkill;
 import skillsmulator.Skill.Skill;
 
 /**
@@ -57,14 +66,15 @@ import skillsmulator.Skill.Skill;
  * @author fes77
  */
 public class UImainController implements Initializable {
+    Simulator sim;
     List<Skill> skillList;
+    Thread thread;
     
     @FXML
     private Label label;
     
     @FXML
     private ComboBox<Integer> combobox;
-    private ObjectProperty<Integer> selectedData;
 
     @FXML
     private LineChart chart;
@@ -105,10 +115,52 @@ public class UImainController implements Initializable {
     private CheckBox MaximumMightBox;
     @FXML
     private CheckBox LatentPowerBox;
-
+    
+    
+    @FXML
+    private GridPane requiredSkillGridPane;
+    
+    @FXML
+    private ComboBox MasterTouchBox;
+    @FXML
+    private ComboBox HandicraftBox;
+    @FXML
+    private ComboBox RazorSharpBox;
+    @FXML
+    private ComboBox SpeedSharpingBox;
+    @FXML
+    private ComboBox ProtectivePolishBox;
+    @FXML
+    private ComboBox PieceUpBox;
+    @FXML
+    private ComboBox RapidFireUpBox;
+    @FXML
+    private ComboBox RecoilDownBox;
+    @FXML
+    private ComboBox ReloadSpeedBox;
+    @FXML
+    private ComboBox SpareShotBox;
+    @FXML
+    private ComboBox QuickSheathBox;
+    @FXML
+    private ComboBox FlinchFreeBox;
+    @FXML
+    private ComboBox StunResistanceBox;
+    @FXML
+    private ComboBox FreeMealBox;
+    @FXML
+    private ComboBox MushroomancerBox;
+    @FXML
+    private ComboBox WideRangeBox;
+    @FXML
+    private ComboBox AmmoUpBox;
+    @FXML
+    private ComboBox SluggerBox;
     
     
     private ObservableList<Equipment> equipmentData;
+    private DoubleProperty bestExpectation;
+    
     @FXML 
     private TableView equipmentTable;
     @FXML 
@@ -144,29 +196,93 @@ public class UImainController implements Initializable {
     @FXML 
     private TableColumn decorationLevelCol;
     
+    XYChart.Series<Integer, Double> bestSeries;
+    XYChart.Series<Integer, Double> avgSeries;
+    XYChart.Series<Integer, Double> worstSeries;
+    XYChart.Series<Integer, Double> avgScoreSeries;
+    
+    @FXML
+    private TableView<Charm> charmTable;
+    private ObservableList<Charm> charmData;
+    
+    @FXML
+    private ComboBox<Skill> charmSkill1Box;
+    @FXML
+    private ComboBox<Integer> charmSkill1LevelBox;
+    @FXML
+    private ComboBox<Skill> charmSkill2Box;
+    @FXML
+    private ComboBox<Integer> charmSkill2LevelBox;
+    @FXML
+    private ComboBox<Slot> charmSkillSlotBox;
+    @FXML
+    private Button charmAddButton;
+    @FXML 
+    private TableColumn<Charm, Skill> charmSkill1Col;
+    @FXML 
+    private TableColumn<Charm, Skill> charmSkill2Col;
+    @FXML 
+    private TableColumn<Charm, Integer> charmSkill1LevelCol;
+    @FXML 
+    private TableColumn<Charm, Integer> charmSkill2LevelCol;
+    @FXML 
+    private TableColumn<Charm, Slot> charmSlotCol;
+    
+    
+    private Weapon weapon;
+    @FXML
+    private Spinner<Integer> weaponDamageSpinner;
+    @FXML
+    private Spinner<Integer> weaponAffinitySpinner;
+    @FXML
+    private ComboBox<Slot> weaponSlotBox;
+    
+    @FXML
+    private ProgressBar progressBar;
+    
     
     @FXML
     private void handleButtonAction(ActionEvent event) {
+        System.out.println(weapon);
         System.out.println(attackBoost.getRequired());
-        updateBestDecorations();
+//        updateBestDecorations();
+        bestSeries.getData().clear();
+        avgSeries.getData().clear();
+        worstSeries.getData().clear();
+        avgScoreSeries.getData().clear();
         System.out.println("Updated");
+        
+        if(thread.isAlive())
+        {
+            sim.setActive(false);
+            try
+            {
+                thread.join();
+                System.out.println("Thread joined");
+            }catch(InterruptedException e)
+            {
+                System.out.println(Arrays.toString(e.getStackTrace()));
+            }
+        }
+        
+        
+        bestExpectation.set(0);
+        thread = new Thread(){
+            @Override
+            public void run(){
+                sim.setActive(true);
+                sim.run(weapon, 4, 10, 50);
+                
+            }
+        };
+        thread.start();
+            
+        
     }
     
     @FXML
-    private void updateBestDecorations() {
-        List<Skill> activeSkills = skillList
-                    .stream()
-                    .filter(AttackSkill.class::isInstance)
-                    .filter(Skill::isActive)
-                    .toList();
-        for(Equipment e: equipmentData)
-        {
-            e.updateBestDecoration(activeSkills);
-        }
-   }
-    
-    @FXML
     private void updateSkillList(Equipment e) {
+        
         Map<Skill, Integer> skills = e.getSkillMap();
         Map<Skill, Integer> decorations = e.getBestDecorationMap()
                 .entrySet()
@@ -191,10 +307,72 @@ public class UImainController implements Initializable {
          
    }
     
+    @FXML
+    private void onCharmAddClicked(ActionEvent event) {
+        System.out.println("Adding charm");
+        Slot slot = charmSkillSlotBox.getValue();
+        Skill skill1 = charmSkill1Box.getValue();
+        Skill skill2 = charmSkill2Box.getValue();
+        Integer skill1Level = charmSkill1LevelBox.getValue();
+        Integer skill2Level = charmSkill2LevelBox.getValue();
+        
+        Map<Skill, Integer> skillMap = new HashMap();
+        StringBuilder sb = new StringBuilder();
+        
+        if(skill1 != Simulator.emptySkill)
+        {
+            skillMap.put(skill1, skill1Level);
+            sb.append(skill1.getName());
+            sb.append(skill1Level);
+        }
+        if(skill2 != Simulator.emptySkill)
+        {
+            skillMap.put(skill2, skill2Level);
+            sb.append(skill2.getName());
+            sb.append(skill2Level);
+        }
+        sb.append(slot);
+        
+        
+        Charm charm = new Charm(sb.toString(), skillMap, slot.getSlot3(), slot.getSlot2(), slot.getSlot1());
+//        System.out.println(charm.getName());
+//        for(Entry e :charm.getSkills().entrySet())
+//        {
+//            System.out.println(e.getKey());
+//            System.out.println(e.getValue());
+//        }
+//        
+//        System.out.println(new Slot(charm.getSlot3(), charm.getSlot2(), charm.getSlot1()));
+        DataLoader.appendRow(
+                "data/MHR_EQUIP_CHARM.tsv", 
+                DataLoader.outputRow(charm));
+        charmData.add(charm);
+        sim.addCharm(charm);
+    }
+    
+    @FXML
+    private void onCharmDelete(ActionEvent event)
+    {
+        createFile("data/MHR_EQUIP_CHARM.tsv");
+        
+        Charm seletcedCharm = charmTable.getSelectionModel().getSelectedItem();
+        System.out.println(seletcedCharm);
+        charmData.remove(seletcedCharm);
+        
+        charmData.stream()
+                .forEach(
+                        c -> DataLoader.appendRow(
+                                "data/MHR_EQUIP_CHARM.tsv", 
+                                DataLoader.outputRow(c)
+                        )
+                );
+        sim.getCharms().remove(seletcedCharm);
+    }
+    
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-//        button.setOnAction(this::onClick);
-        skillList = Simulator.getAllSkills();
+        thread = new Thread();
+
         equipmentData = FXCollections.observableArrayList();
 
         equipmentTable.itemsProperty().setValue(equipmentData);
@@ -232,46 +410,26 @@ public class UImainController implements Initializable {
         decorationNameCol.setCellValueFactory(new PropertyValueFactory<SkillItem, String>("decoration"));
         decorationLevelCol.setCellValueFactory(new PropertyValueFactory<SkillItem, Integer>("level"));
         
-        combobox.getItems().add(0);
-        combobox.getItems().add(1);
-        combobox.getItems().add(2);
-        combobox.getItems().add(3);
-        combobox.setValue(0);
-        
-//        combobox.setConverter();
-
-        selectedData = new SimpleObjectProperty<>();
-        Simulator.masterTouch.requiredProperty().bind(combobox.getSelectionModel().selectedItemProperty());
-//        lblCmbBoxSelected.textProperty().bind(selectedData.asString());
-
-        combobox.getSelectionModel().selectedItemProperty().addListener((r,o,newValue) -> {
-//            if (newValue == null){
-//                lblCmbBox.textProperty().set("選択なし");
-//            } else {
-//                lblCmbBox.textProperty().set(newValue.getTitle());
-//            }
-        });
-    
-//        lineChart.setTitle("Stock Monitoring, 2010");
-        //defining a series
-        XYChart.Series series = new XYChart.Series();
-        series.setName("My portfolio");
-        //populating the series with data
-        series.getData().add(new XYChart.Data(1, 23));
-        series.getData().add(new XYChart.Data(2, 14));
-        series.getData().add(new XYChart.Data(3, 15));
-        series.getData().add(new XYChart.Data(4, 24));
-        series.getData().add(new XYChart.Data(5, 34));
-        series.getData().add(new XYChart.Data(6, 36));
-        series.getData().add(new XYChart.Data(7, 22));
-        series.getData().add(new XYChart.Data(8, 45));
-        series.getData().add(new XYChart.Data(9, 43));
-        series.getData().add(new XYChart.Data(10, 17));
-        series.getData().add(new XYChart.Data(11, 29));
-        series.getData().add(new XYChart.Data(12, 25));
         
 
-        chart.getData().add(series);
+        
+        //defining a bestSeries
+        bestSeries = new XYChart.Series();
+        avgSeries = new XYChart.Series();
+        worstSeries = new XYChart.Series();
+        avgScoreSeries = new XYChart.Series();
+        
+        bestSeries.setName("Best");
+        avgSeries.setName("Average"); 
+        worstSeries.setName("Worst");
+        avgScoreSeries.setName("Average Score");
+        
+
+        chart.getData().add(bestSeries);
+        chart.getData().add(avgSeries);
+        chart.getData().add(worstSeries);
+        chart.getData().add(avgScoreSeries);
+        
         
         
         AttackBoostBox.selectedProperty().bindBidirectional(attackBoost.activeProperty());
@@ -300,57 +458,180 @@ public class UImainController implements Initializable {
         LatentPowerBox.setSelected(false);
         MaximumMightBox.setSelected(true);
         OffensiveGuardBox.setSelected(false);
-        PeakPerformanceBox.setSelected(true);
+        PeakPerformanceBox.setSelected(false);
         PunishingDrawBox.setSelected(false);
         ResentmentBox.setSelected(false);
         ResuscitateBox.setSelected(false);
         WeaknessExploitBox.setSelected(true);
-  
         
-        List<Skill>skills = new ArrayList();
+       
+        Map<ComboBox, Skill> comboboxMap = new HashMap();
+        comboboxMap.put(MasterTouchBox, Simulator.masterTouch);
+        comboboxMap.put(HandicraftBox, Simulator.handicraft);
+        comboboxMap.put(RazorSharpBox, Simulator.razorSharp);
+        comboboxMap.put(SpeedSharpingBox, Simulator.speedSharping);
+        comboboxMap.put(ProtectivePolishBox, Simulator.protectivePolish);
+        comboboxMap.put(PieceUpBox, Simulator.pieceUp);
+        comboboxMap.put(RapidFireUpBox, Simulator.rapidFireUp);
+        comboboxMap.put(RecoilDownBox, Simulator.recoilDown);
+        comboboxMap.put(ReloadSpeedBox, Simulator.reloadSpeed);
+        comboboxMap.put(SpareShotBox, Simulator.spareShot);
+        comboboxMap.put(QuickSheathBox, Simulator.quickSheath);
+        comboboxMap.put(FlinchFreeBox, Simulator.flinchFree);
+        comboboxMap.put(StunResistanceBox, Simulator.stunResistance);
+        comboboxMap.put(FreeMealBox, Simulator.freeMeal);
+        comboboxMap.put(MushroomancerBox, Simulator.mushroomancer);
+        comboboxMap.put(WideRangeBox, Simulator.wideRange);
+        comboboxMap.put(AmmoUpBox, Simulator.ammoUp);
+        comboboxMap.put(SluggerBox, Simulator.slugger);
+        
+        // Setting up cmbboxes
+        for(Entry<ComboBox, Skill> entry :comboboxMap.entrySet())
+        {
+            ComboBox cmb = entry.getKey();
+            Skill skill = entry.getValue();
+//            System.out.println(skill);
+//            System.out.println(cmb);
+            
+            IntStream.rangeClosed(0, skill.getMax()).forEach(x -> cmb.getItems().add(x));
+            cmb.setValue(0);
 
-        skills.add(attackBoost);
-        skills.add(peakPerformance);
-        skills.add(criticalEye);
-        skills.add(criticalBoost);
-        skills.add(weaknessExploit);
-        skills.add(maximumMight);
-        skills.add(agitator);
-        skills.add(criticalDraw);
-        skills.add(offensiveGuard);
+            skill.requiredProperty().bind(cmb.getSelectionModel().selectedItemProperty());
+        }
+        
+        // Weapon
+        weapon = new Weapon("weapon", 200, 0, 0, 0, 0);
+        SpinnerValueFactory<Integer> damageValueFactory = //
+                new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 500, 200);
+        SpinnerValueFactory<Integer> affinityValueFactory = //
+                new SpinnerValueFactory.IntegerSpinnerValueFactory(-20, 100, 0);
+        weaponDamageSpinner.setValueFactory(damageValueFactory);
+        weaponAffinitySpinner.setValueFactory(affinityValueFactory);
+        weapon.getDamageProperty().bind(weaponDamageSpinner.valueProperty());
+        weapon.getAffinityProperty().bind(weaponAffinitySpinner.valueProperty());
+//        weaponDamageSpinner.valueProperty().addListener((observable) -> {
+//            System.out.println(weapon.getDamage());
+//        });
+        for(int i = 0; i <= 3; i++)
+        {
+            for(int j = 0; j <= 3; j++)
+            {
+                for(int k = 0; k <= 3; k++)
+                {
+                    if(i + j + k > 3)
+                        continue;
+                    if(i >= 2)
+                        continue;
+                    if(i == 1 && j >= 2)
+                        continue;
+                    weaponSlotBox.getItems().add(new Slot(i, j, k));
+                    charmSkillSlotBox.getItems().add(new Slot(i, j, k));
+                }
+            }
+        }
+        weaponSlotBox.setValue(new Slot(0, 0, 0));
+        charmSkillSlotBox.setValue(new Slot(0, 0, 0));
+        weapon.getSlotProperty().bind(weaponSlotBox.valueProperty());
+        
+        // Charm setting
+        Simulator.ALL_SKILLS.stream().forEach(charmSkill1Box.getItems()::add);
+        charmSkill1Box.setValue(charmSkill1Box.getItems().get(0));
+        charmSkill1Box.valueProperty().addListener((observable) -> {
+            charmSkill1LevelBox.getItems().clear();
+            if(charmSkill1Box.valueProperty().get() == Simulator.emptySkill)
+                charmSkill1LevelBox.getItems().add(0);
+            else
+                IntStream.rangeClosed(1, charmSkill1Box.getValue().getMax()).forEach(x -> charmSkill1LevelBox.getItems().add(x));
+            charmSkill1LevelBox.setValue(charmSkill1LevelBox.getItems().get(0));
+        });
+        
+        Simulator.ALL_SKILLS.stream().forEach(charmSkill2Box.getItems()::add);
+        charmSkill2Box.setValue(charmSkill2Box.getItems().get(0));
+        charmSkill2Box.valueProperty().addListener((observable) -> {
+            charmSkill2LevelBox.getItems().clear();
+            if(charmSkill2Box.valueProperty().get() == Simulator.emptySkill)
+                charmSkill2LevelBox.getItems().add(0);
+            else
+                IntStream.rangeClosed(1, charmSkill2Box.getValue().getMax()).forEach(x -> charmSkill2LevelBox.getItems().add(x));
+            charmSkill2LevelBox.setValue(charmSkill2LevelBox.getItems().get(0));
+        });
+        
+        charmData = FXCollections.observableArrayList();
+        charmTable.itemsProperty().setValue(charmData);
+        charmTable.setItems(charmData);
+        charmSkill1Col.setCellValueFactory(new PropertyValueFactory("skill1"));
+        charmSkill1LevelCol.setCellValueFactory(new PropertyValueFactory("skill1Level"));
+        charmSkill2Col.setCellValueFactory(new PropertyValueFactory("skill2"));
+        charmSkill2LevelCol.setCellValueFactory(new PropertyValueFactory("skill2Level"));
+        charmSlotCol.setCellValueFactory(new PropertyValueFactory("slot"));
+//        charmTable.setRowFactory(tv -> {
+//            TableRow<Charm> row = new TableRow<>();
+//            row.setOnMouseClicked(event -> {
+//                if (! row.isEmpty()) {
+//                    Charm rowData = row.getItem();
+//                    on(rowData);
+//                }
+//            });
+//            return row ;
+//        });
         
         
-        Weapon weapon = new Weapon("Sord", 200, 0);
-        Weapon weapon1 = new Weapon("Sord", 200, 0);
-        Helm helm3 = new Helm("Helm3", 0, 5, 1);
-        helm3.addSkill(maximumMight, 1);
+//        chart.getYAxis().setAutoRanging(false);;
+        
+        sim = new Simulator(equipmentData);
+        bestExpectation = new SimpleDoubleProperty(0);
+        bestExpectation.set(0);
+        equipmentData.addListener(new ListChangeListener() {
+            @Override
+            public void onChanged(ListChangeListener.Change change) {
+                if(equipmentData.size() > 0)
+                {
+                    bestExpectation.set(equipmentData.get(0).getExpectation());
+                    Platform.runLater(() -> {
+                        bestSeries.getData().add(new XYChart.Data<>(bestSeries.getData().size(), bestExpectation.get()));
+                        worstSeries.getData().add(
+                                new XYChart.Data<>(
+                                        worstSeries.getData().size(), 
+                                        equipmentData.get(
+                                                equipmentData.size() - 1).getExpectation()
+                                )
+                        );
 
-        Chest chest = new Chest("Chest", 0, 1, 0);
-        chest.addSkill(criticalEye, 1);
-        chest.addSkill(criticalBoost, 1);
-        Arm arm = new Arm("arm", 0, 0, 0);
-        arm.addSkill(attackBoost, 2);
-        Waist waist = new Waist("waist", 0, 2, 0);
-        waist.addSkill(criticalEye, 1);
-        Leg leg = new Leg("leg", 0, 0, 1);
-        leg.addSkill(peakPerformance, 1);
-        Charm charm = new Charm("charm", 0, 1, 2);
-        charm.addSkill(criticalEye, 1);
+                        avgSeries.getData().add(
+                                new XYChart.Data<>(avgSeries.getData().size(), 
+                                equipmentData
+                                        .stream().map(e -> e.getExpectation())
+                                        .mapToDouble(x -> x)
+                                        .sum() / equipmentData.size()
+                                )
+                        );
+                        avgScoreSeries.getData().add(
+                                new XYChart.Data<>(avgScoreSeries.getData().size(), 
+                                equipmentData
+                                        .stream().map(e -> e.getScore())
+                                        .mapToInt(x -> x)
+                                        .sum() / (double)equipmentData.size()
+                                )
+                        );
+                    });
+
+//                    }
+                }
+            }
+
+        });
         
-//        Equipment equipment = new Equipment(weapon, helm3, chest, arm, waist, leg, charm);
-//        equipmentData.add(equipment);
-//        Equipment equipment1 = new Equipment(weapon1, helm3, chest, arm, waist, leg, charm);
-//        equipmentData.add(equipment1);
         
-        Simulator sim = new Simulator(equipmentData);
-        sim.addHelm(helm3);
-        sim.addChest(chest);
-        sim.addArm(arm);
-        sim.addWaist(waist);
-        sim.addLeg(leg);
-        sim.addCharm(charm);
-        
-        sim.run();
+        LoadHelmData("MHR_EQUIP_HEAD - 頭.tsv").stream().forEach(armor -> sim.addHelm(armor));
+        LoadChestData("MHR_EQUIP_BODY - 胴.tsv").stream().forEach(armor -> sim.addChest(armor));
+        LoadArmData("MHR_EQUIP_ARM - 腕.tsv").stream().forEach(armor -> sim.addArm(armor));
+        LoadWaistData("MHR_EQUIP_WST - 腰.tsv").stream().forEach(armor -> sim.addWaist(armor));
+        LoadLegData("MHR_EQUIP_LEG - 脚.tsv").stream().forEach(armor -> sim.addLeg(armor));
+        LoadCharmData("MHR_EQUIP_CHARM.tsv").stream().forEach(armor -> sim.addCharm(armor));
+        sim.getCharms().stream().forEach(charmData::add);
+//        sim.run();
+        if(sim.getCharms().isEmpty())
+            sim.addCharm(new Charm("charm", 0, 0, 0));
         
         
     

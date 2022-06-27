@@ -20,7 +20,7 @@ import skillsmulator.Skill.Skill;
  */
 public abstract class Armor implements Comparable<Armor>, Decoratable{
     private final String title;
-    private final Map<Skill, Integer> skills;
+    protected final Map<Skill, Integer> skills;
     private int slot1;
     private int slot2;
     private int slot3;
@@ -45,7 +45,6 @@ public abstract class Armor implements Comparable<Armor>, Decoratable{
         this.slot1 = slot1;
         this.slot2 = slot2;
         this.slot3 = slot3;
-        
     }
 
     @Override
@@ -74,10 +73,10 @@ public abstract class Armor implements Comparable<Armor>, Decoratable{
         score += skills
                 .keySet()
                 .stream()
-                .filter(AttackSkill.class::isInstance)
-                .map(AttackSkill.class::cast)
-                .map(skill -> skill.getCost() * skills.get(skill))
+                .filter(skill -> AttackSkill.class.isInstance(skill) || skill.getRequired() > 0)
+                .map(skill -> skill.getCost() * skills.get(skill) * (skill.getRequired() > 0 ? skill.getRequired() * 2 : 1))
                 .reduce(0, Integer::sum);
+
     }
     
     public void addSkill(Skill skill, int level)
@@ -250,10 +249,12 @@ public abstract class Armor implements Comparable<Armor>, Decoratable{
         return score - o.getScore();
     }
     
+    
+    
     public static void main(String[] args)
     {
         
-        
+        attackBoost.setRequired(2);
         Armor armor = new Helm("Helm", 0, 2, 1);
         armor.addSkill(attackBoost, 4);
         armor.addSkill(peakPerformance, 2);

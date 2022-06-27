@@ -59,7 +59,7 @@ public class Skill {
 
     @Override
     public String toString() {
-        return "Skill{" + "title=" + name + '}';
+        return name;
     }
     
     public int getCost()
