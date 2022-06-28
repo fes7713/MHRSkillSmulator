@@ -4,6 +4,7 @@
  */
 package skillsmulator;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -13,6 +14,7 @@ import java.util.Map.Entry;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import javafx.application.Platform;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -21,7 +23,9 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.scene.Scene;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
@@ -36,6 +40,7 @@ import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
+import javafx.stage.Stage;
 import skillsmulator.Armor.Charm;
 import static skillsmulator.DataLoader.LoadArmData;
 import static skillsmulator.DataLoader.LoadCharmData;
@@ -156,6 +161,12 @@ public class UImainController implements Initializable {
     private ComboBox AmmoUpBox;
     @FXML
     private ComboBox SluggerBox;
+    @FXML
+    private ComboBox CriticalDrawCmbBox;
+    @FXML
+    private ComboBox DefenseBoostBox;
+    @FXML
+    private ComboBox CriticalElementBox;
     
     
     private ObservableList<Equipment> equipmentData;
@@ -236,16 +247,23 @@ public class UImainController implements Initializable {
     private Spinner<Integer> weaponAffinitySpinner;
     @FXML
     private ComboBox<Slot> weaponSlotBox;
+    @FXML
+    private ComboBox<Skill> elementBox;
+    @FXML
+    private ComboBox<Integer> elementLevelBox;
     
     @FXML
     private ProgressBar progressBar;
-    
+    @FXML
+    private ProgressBar skipRateBar;
+    @FXML
+    private Spinner<Integer> skipRateScoreSpinner;
     
     @FXML
     private void handleButtonAction(ActionEvent event) {
         System.out.println(weapon);
         System.out.println(attackBoost.getRequired());
-//        updateBestDecorations();
+
         bestSeries.getData().clear();
         avgSeries.getData().clear();
         worstSeries.getData().clear();
@@ -271,7 +289,8 @@ public class UImainController implements Initializable {
             @Override
             public void run(){
                 sim.setActive(true);
-                sim.run(weapon, 4, 10, 50);
+                int componentLimit = 4;
+                sim.run(weapon, componentLimit, (int)(componentLimit * 6 * 1.5), 50);
                 
             }
         };
@@ -304,6 +323,7 @@ public class UImainController implements Initializable {
         {
             decorationData.add(new SkillItem(entry.getKey(), entry.getValue()));
         }
+        System.out.println(e);
          
    }
     
@@ -335,14 +355,6 @@ public class UImainController implements Initializable {
         
         
         Charm charm = new Charm(sb.toString(), skillMap, slot.getSlot3(), slot.getSlot2(), slot.getSlot1());
-//        System.out.println(charm.getName());
-//        for(Entry e :charm.getSkills().entrySet())
-//        {
-//            System.out.println(e.getKey());
-//            System.out.println(e.getValue());
-//        }
-//        
-//        System.out.println(new Slot(charm.getSlot3(), charm.getSlot2(), charm.getSlot1()));
         DataLoader.appendRow(
                 "data/MHR_EQUIP_CHARM.tsv", 
                 DataLoader.outputRow(charm));
@@ -367,6 +379,26 @@ public class UImainController implements Initializable {
                         )
                 );
         sim.getCharms().remove(seletcedCharm);
+    }
+    
+    @FXML
+    private void onSetting(ActionEvent event)
+    {
+        try {
+            FXMLLoader fxmlLoader = new FXMLLoader();
+            fxmlLoader.setLocation(getClass().getResource("NewWindow.fxml"));
+            /* 
+             * if "fx:controller" is not set in fxml
+             * fxmlLoader.setController(NewWindowController);
+             */
+            Scene scene = new Scene(fxmlLoader.load(), 600, 400);
+            Stage stage = new Stage();
+            stage.setTitle("New Window");
+            stage.setScene(scene);
+            stage.show();
+        } catch (IOException e) {
+            
+        }
     }
     
     @Override
@@ -484,6 +516,9 @@ public class UImainController implements Initializable {
         comboboxMap.put(WideRangeBox, Simulator.wideRange);
         comboboxMap.put(AmmoUpBox, Simulator.ammoUp);
         comboboxMap.put(SluggerBox, Simulator.slugger);
+        comboboxMap.put(CriticalElementBox, Simulator.criticalElement);
+        comboboxMap.put(CriticalDrawCmbBox, Simulator.criticalDraw);
+        comboboxMap.put(DefenseBoostBox, Simulator.defenceBoost);
         
         // Setting up cmbboxes
         for(Entry<ComboBox, Skill> entry :comboboxMap.entrySet())
@@ -533,6 +568,36 @@ public class UImainController implements Initializable {
         charmSkillSlotBox.setValue(new Slot(0, 0, 0));
         weapon.getSlotProperty().bind(weaponSlotBox.valueProperty());
         
+        // element
+        Stream.of(
+                Simulator.emptySkill,
+                Simulator.fireAttack, 
+                Simulator.thunderAttack, 
+                Simulator.waterAttack, 
+                Simulator.iceAttack, 
+                Simulator.dragonAttack, 
+                Simulator.blastAttack, 
+                Simulator.paralysisAttack)
+                .forEach(elementBox.getItems()::add);
+        
+        elementBox.setValue(elementBox.getItems().get(0));
+        elementBox.valueProperty().addListener((observable) -> {
+            elementLevelBox.getItems().clear();
+            elementBox.getItems().stream().forEach(skill -> skill.setRequired(0));
+            
+            if(elementBox.valueProperty().get() == Simulator.emptySkill)
+                elementLevelBox.getItems().add(0);
+            else
+            {
+                IntStream.rangeClosed(1, elementBox.getValue().getMax()).forEach(x -> elementLevelBox.getItems().add(x));
+            }
+            elementLevelBox.setValue(elementLevelBox.getItems().get(0));
+            elementBox.getValue().setRequired(elementLevelBox.getValue());
+        });
+        elementLevelBox.valueProperty().addListener((observable) -> {
+            elementBox.getValue().setRequired(elementLevelBox.getValue());
+        });
+        
         // Charm setting
         Simulator.ALL_SKILLS.stream().forEach(charmSkill1Box.getItems()::add);
         charmSkill1Box.setValue(charmSkill1Box.getItems().get(0));
@@ -564,19 +629,8 @@ public class UImainController implements Initializable {
         charmSkill2Col.setCellValueFactory(new PropertyValueFactory("skill2"));
         charmSkill2LevelCol.setCellValueFactory(new PropertyValueFactory("skill2Level"));
         charmSlotCol.setCellValueFactory(new PropertyValueFactory("slot"));
-//        charmTable.setRowFactory(tv -> {
-//            TableRow<Charm> row = new TableRow<>();
-//            row.setOnMouseClicked(event -> {
-//                if (! row.isEmpty()) {
-//                    Charm rowData = row.getItem();
-//                    on(rowData);
-//                }
-//            });
-//            return row ;
-//        });
+
         
-        
-//        chart.getYAxis().setAutoRanging(false);;
         
         sim = new Simulator(equipmentData);
         bestExpectation = new SimpleDoubleProperty(0);
@@ -622,6 +676,14 @@ public class UImainController implements Initializable {
         });
         
         
+        // Progress bar
+        sim.getProgressProperty().bindBidirectional(progressBar.progressProperty());
+        sim.getSkipRateProperty().bindBidirectional(skipRateBar.progressProperty());
+        SpinnerValueFactory<Integer> skipValueFactory = //
+                new SpinnerValueFactory.IntegerSpinnerValueFactory(-20, 100, 4 * 9); //(int)(componentLimit * 6 * 1.5)
+        skipRateScoreSpinner.setValueFactory(skipValueFactory);
+        sim.getSkipValueProperty().bind(skipRateScoreSpinner.valueProperty());
+        
         LoadHelmData("MHR_EQUIP_HEAD - 頭.tsv").stream().forEach(armor -> sim.addHelm(armor));
         LoadChestData("MHR_EQUIP_BODY - 胴.tsv").stream().forEach(armor -> sim.addChest(armor));
         LoadArmData("MHR_EQUIP_ARM - 腕.tsv").stream().forEach(armor -> sim.addArm(armor));
@@ -634,7 +696,7 @@ public class UImainController implements Initializable {
             sim.addCharm(new Charm("charm", 0, 0, 0));
         
         
-    
+        
         
     }    
 }

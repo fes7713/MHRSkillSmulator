@@ -28,25 +28,25 @@ public class UnknownArmor extends Armor{
     
     public Chest convChest()
     {
-        return new Chest(getName(), getSkills(), getSlot3(), getSlot2(), getSlot3());
+        return new Chest(getName(), getSkills(), getSlot3(), getSlot2(), getSlot1());
     }
     
     public Arm convArm()
     {
-        return new Arm(getName(), getSkills(), getSlot3(), getSlot2(), getSlot3());
+        return new Arm(getName(), getSkills(), getSlot3(), getSlot2(), getSlot1());
     }
     
     public Waist convWaist()
     {
-        return new Waist(getName(), getSkills(), getSlot3(), getSlot2(), getSlot3());
+        return new Waist(getName(), getSkills(), getSlot3(), getSlot2(), getSlot1());
     }
     
     public Leg convLeg()
     {
-        return new Leg(getName(), getSkills(), getSlot3(), getSlot2(), getSlot3());
+        return new Leg(getName(), getSkills(), getSlot3(), getSlot2(), getSlot1());
     }
     public Charm convCharm()
     {
-        return new Charm(getName(), getSkills(), getSlot3(), getSlot2(), getSlot3());
+        return new Charm(getName(), getSkills(), getSlot3(), getSlot2(), getSlot1());
     }
 }

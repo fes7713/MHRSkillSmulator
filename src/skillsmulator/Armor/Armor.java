@@ -74,7 +74,11 @@ public abstract class Armor implements Comparable<Armor>, Decoratable{
                 .keySet()
                 .stream()
                 .filter(skill -> AttackSkill.class.isInstance(skill) || skill.getRequired() > 0)
-                .map(skill -> skill.getCost() * skills.get(skill) * (skill.getRequired() > 0 ? skill.getRequired() * 2 : 1))
+                .map(skill -> 
+                        skill.getCost() * 
+                        skills.get(skill) * 
+                        (skill.getRequired() > 0 ? skill.getRequired() * 2 : 1) * 
+                        (skill.getCost() >= 2 ? 2 : 1))
                 .reduce(0, Integer::sum);
 
     }

@@ -8,6 +8,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.scene.chart.XYChart.Data;
 import skillsmulator.Armor.Arm;
 import skillsmulator.Armor.Armor;
 import skillsmulator.Armor.Charm;
@@ -46,6 +51,22 @@ public class Simulator {
     List<Charm> selectedCharms;
     
     List<Equipment> equipments;
+    DoubleProperty progress;
+    DoubleProperty skipRate;
+    DoubleProperty skipValue;
+    
+    double totalExpectation;
+    double totalScore;
+    int chartCounter;
+    
+    ObservableList<Data<Integer, Double>> bestExpectationData;
+    ObservableList<Data<Integer, Double>> worstExpectationData;
+    ObservableList<Data<Integer, Double>> averageExpectationData;
+    
+    ObservableList<Data<Integer, Double>> bestScoreData;
+    ObservableList<Data<Integer, Double>> worstScoreData;
+    ObservableList<Data<Integer, Double>> averageScoreData;
+    
     
     public static final Skill emptySkill
             = new UnknownSkill("", 10);
@@ -85,7 +106,7 @@ public class Simulator {
     
     
     public static final Skill handicraft
-            = new Skill("匠", "匠珠", 2, 5);
+            = new Skill("匠", "匠珠", 3, 5);
     public static final Skill razorSharp
             = new Skill("業物", "斬鉄珠", 2, 3);
     public static final Skill speedSharping
@@ -118,6 +139,26 @@ public class Simulator {
             = new Skill("装填拡張", "装填珠", 3, 3);
     public static final Skill slugger
             = new Skill("ＫＯ術", "ＫＯ珠", 2, 3);
+    public static final Skill defenceBoost
+            = new Skill("防御", "防御珠", 1, 5);
+    public static final Skill criticalElement
+            = new Skill("会心撃【属性】", "属会珠", 1, 5);
+    public static final Skill fireAttack
+            = new Skill("火属性攻撃強化", "火炎珠", 1, 5);
+    public static final Skill thunderAttack
+            = new Skill("雷属性攻撃強化", "雷光珠", 1, 5);
+    public static final Skill waterAttack
+            = new Skill("水属性攻撃強化", "流水珠", 1, 5);
+    public static final Skill iceAttack
+            = new Skill("氷属性攻撃強化", "氷結珠", 1, 5);
+    public static final Skill dragonAttack
+            = new Skill("龍属性攻撃強化", "破龍珠", 1, 5);
+    public static final Skill blastAttack
+            = new Skill("爆破属性強化", "爆破珠", 1, 5);
+    public static final Skill paralysisAttack
+            = new Skill("麻痺属性強化", "麻痺珠", 1, 5);
+    
+    
     
     public static final List<Skill> ALL_SKILLS = getAllSkills();
     public static final List<Skill> ALL_ATTACK_SKILLS = getAllAttackSkills();
@@ -142,6 +183,17 @@ public class Simulator {
         selectedCharms = new ArrayList<>();
         
         this.equipments = equipments;
+        progress = new SimpleDoubleProperty(0);
+        skipRate = new SimpleDoubleProperty(0);
+        skipValue = new SimpleDoubleProperty(0);
+        
+        bestExpectationData = FXCollections.observableArrayList();
+        averageExpectationData = FXCollections.observableArrayList();
+        worstExpectationData = FXCollections.observableArrayList();
+        bestScoreData = FXCollections.observableArrayList();
+        averageScoreData = FXCollections.observableArrayList();
+        worstScoreData = FXCollections.observableArrayList();
+        
         
 //        DEFAULT_ACTIVE_SKILLS();
         setActive(false);
@@ -204,6 +256,39 @@ public class Simulator {
         return charms;
     }
     
+    public DoubleProperty getProgressProperty()
+    {
+        return progress;
+    }
+    
+    public DoubleProperty getSkipRateProperty()
+    {
+        return skipRate;
+    }
+    
+    public DoubleProperty getSkipValueProperty()
+    {
+        return skipValue;
+    }
+
+    public ObservableList<Data<Integer, Double>> getBestExpectationData() {
+        return bestExpectationData;
+    }
+
+    public ObservableList<Data<Integer, Double>> getWorstExpectationData() {
+        return worstExpectationData;
+    }
+
+    public ObservableList<Data<Integer, Double>> getAverageExpectationData() {
+        return averageExpectationData;
+    }
+
+    public ObservableList<Data<Integer, Double>> getAverageScoreData() {
+        return averageScoreData;
+    }
+    
+    
+    
     private <T extends Armor> void select(List<T> armors, List<T> selected, int limit) {
         selected.clear();
         
@@ -247,6 +332,9 @@ public class Simulator {
     public void run(Weapon weapon, int componentScoreLimit, int combinationScoreLimit, int listSize) {
         setActive(true);
         equipments.clear();
+        progress.set(0);
+        skipRate.set(0);
+//        skipValue.set(combinationScoreLimit);
 
         select(helms, selectedHelms, componentScoreLimit);
         select(chests, selectedChests, componentScoreLimit);
@@ -261,16 +349,21 @@ public class Simulator {
         Collections.sort(selectedWaists, Comparator.reverseOrder());
         Collections.sort(selectedLegs, Comparator.reverseOrder());
         Collections.sort(selectedCharms, Comparator.reverseOrder());
-        System.out.println(
-                    selectedHelms.size() *
-                    selectedChests.size() * 
-                    selectedArms.size() *
-                    selectedWaists.size() *
-                    selectedLegs.size() *
-                    selectedCharms.size() + " Patterns");
+        
         List<Skill> activeSkills = getActiveSkills();
         
+        int combinations = 
+                selectedHelms.size() *
+                selectedChests.size() * 
+                selectedArms.size() *
+                selectedWaists.size() *
+                selectedLegs.size() *
+                selectedCharms.size();
         
+        System.out.println(combinations + " Patterns");
+        
+        int progressCounter = 0;
+        int skipCounter = 0;
         for (int i = 0; i < selectedHelms.size(); i++) {
             for (int j = 0; j < selectedChests.size(); j++) {
                 for (int k = 0; k < selectedArms.size(); k++) {
@@ -282,6 +375,7 @@ public class Simulator {
                                     System.out.println("Exiting");
                                     return;
                                 }
+                                progress.set(progressCounter++/(double)combinations);
                                 Equipment e = new Equipment(
                                         weapon,
                                         selectedHelms.get(i),
@@ -291,23 +385,29 @@ public class Simulator {
                                         selectedLegs.get(y),
                                         selectedCharms.get(w));
 
-//                                System.out.println(selectedHelms.get(i));
-//                                System.out.println(selectedChests.get(j));
-                                if(e.getScore() < 10)
+                                if(e.getScore() < skipValue.get())
+                                {
+                                    skipRate.set(skipCounter ++/(double)progressCounter);
                                     continue;
+                                }
                                 
                                 if(e.updateBestDecoration()){
                                     if(equipments.size() < listSize)
                                     {
-                                        equipments.add(e);
-                                        Collections.sort(equipments, Comparator.reverseOrder());
+                                        pushExpectation(e);
+                                        if(e.getExpectation() == 0)
+                                        {
+                                            System.out.println("Zero");
+                                            e.updateBestDecoration();
+                                        }
                                     }
                                     else{
                                         if(equipments.get(equipments.size() - 1).getExpectation() < e.getExpectation())
                                         {
-                                            equipments.remove(equipments.size() - 1);
-                                            equipments.add(e);
-                                            Collections.sort(equipments, Comparator.reverseOrder());
+                                            Equipment removed = equipments.remove(equipments.size() - 1);
+//                                            totalExpectation -= removed.getExpectation();
+//                                            totalScore -= removed.getScore();
+                                            pushExpectation(e);
                                         }
                                     }
                                     
@@ -330,6 +430,34 @@ public class Simulator {
         System.out.println(equipments.get(0).getExpectation());
         setActive(false);
         
+    }
+    
+    private void pushExpectation(Equipment e)
+    {
+//        chartCounter++;
+//        totalExpectation += e.getExpectation();
+//        totalScore += e.getScore();
+        equipments.add(e);
+        Collections.sort(equipments, Comparator.reverseOrder());
+        
+//        Platform.runLater(new Runnable(){
+//            @Override
+//            public void run() {
+//                bestExpectationData.add(
+//                        new XYChart.Data<>(chartCounter, equipments.get(0).getExpectation())
+//                );
+//                worstExpectationData.add(
+//                        new XYChart.Data<>(chartCounter, equipments.get(equipments.size() - 1).getExpectation())
+//                );
+//
+//                averageExpectationData.add(
+//                        new XYChart.Data<>(chartCounter, totalExpectation / (double)equipments.size())
+//                );
+//                averageScoreData.add(
+//                        new XYChart.Data<>(chartCounter, totalScore / (double)equipments.size())
+//                );
+//            }
+//        });
     }
     
     private List<Skill> getActiveSkills() {
@@ -370,7 +498,16 @@ public class Simulator {
                 mushroomancer,
                 wideRange,
                 ammoUp,
-                slugger);
+                slugger,
+                criticalElement,
+                defenceBoost,
+                fireAttack,
+                thunderAttack,
+                waterAttack,
+                iceAttack,
+                dragonAttack,
+                blastAttack,
+                paralysisAttack);
     }
     
     public static List<Skill> getAllAttackSkills()

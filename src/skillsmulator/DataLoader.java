@@ -144,12 +144,18 @@ public class DataLoader {
         
         Map<Skill, Integer> skillMap = new HashMap();
         addArmorSkillWrapper(skillMap, seraparted);
+        int slot1 = Integer.parseInt(seraparted[SLOT1_INDEX]);
+        int slot2 = Integer.parseInt(seraparted[SLOT2_INDEX]);
+        int slot3 = Integer.parseInt(seraparted[SLOT3_INDEX]);
+        
+        
+        
         UnknownArmor armor = new UnknownArmor(
                 seraparted[NAME_INDEX], 
                 skillMap, 
-                Integer.parseInt(seraparted[SLOT3_INDEX]), 
-                Integer.parseInt(seraparted[SLOT2_INDEX]), 
-                Integer.parseInt(seraparted[SLOT1_INDEX])
+                (int)Stream.of(slot1, slot2, slot3).filter(x -> x == 3).count(),
+                (int)Stream.of(slot1, slot2, slot3).filter(x -> x == 2).count(),
+                (int)Stream.of(slot1, slot2, slot3).filter(x -> x == 1).count()
         );
         return armor;
     }
@@ -188,28 +194,19 @@ public class DataLoader {
         StringBuilder sb = new StringBuilder();
         
         int counter = 0;
-        while(counter <= SLOT3_INDEX)
-        {
-            switch(counter)
-            {
-                case NAME_INDEX ->{
-                    sb.append(armor.getName());
-                }
-                case SLOT1_INDEX ->{
-                    sb.append(armor.getSlot1());
-                }
-                case SLOT2_INDEX ->{
-                    sb.append(armor.getSlot2());
-                }
-                case SLOT3_INDEX ->{
-                    sb.append(armor.getSlot3());
-                }
-            }
-            sb.append("\t");
-            counter++;
-        }
+        sb.append(armor.getName());
+        IntStream.range(NAME_INDEX, SLOT1_INDEX).forEach(x -> sb.append("\t"));
         
-        IntStream.range(SLOT3_INDEX + 1, SKILL1_INDEX).forEach(x -> sb.append("\t"));
+        List<Integer> numSlots = new ArrayList();
+        IntStream.range(0, armor.getSlot3()).forEach(x -> sb.append(3).append("\t"));
+        IntStream.range(0, armor.getSlot2()).forEach(x -> sb.append(2).append("\t"));
+        IntStream.range(0, armor.getSlot1()).forEach(x -> sb.append(1).append("\t"));
+        IntStream.range(0, 3 - armor.getSlot3() - armor.getSlot2() - armor.getSlot1()).forEach(x -> sb.append(0).append("\t"));
+        
+        
+        IntStream.range(
+                SLOT3_INDEX + 1, 
+                SKILL1_INDEX).forEach(x -> sb.append("\t"));
         
         for(Entry entry: armor.getSkills().entrySet())
         {
@@ -262,19 +259,22 @@ public class DataLoader {
     public static void main(String[] args)
     {
         List<Helm> helms = LoadHelmData("MHR_EQUIP_HEAD - 頭.tsv");
+        System.out.println();
+        Armor a = processRow(outputRow(helms.get(0)));
+        System.out.println(a);
 //        List<Chest> chests = LoadChestData("MHR_EQUIP_BODY - 胴.tsv");
 //        List<Arm> arms = LoadArmData("MHR_EQUIP_ARM - 腕.tsv");
 //        List<Waist> waists = LoadWaistData("MHR_EQUIP_WST - 腰.tsv");
 //        List<Leg> legs = LoadLegData("MHR_EQUIP_HEAD - 頭.tsv");
 //        List<Charm> charms = LoadCharmData("MHR_EQUIP_LEG - 脚.tsv");
         
-        System.out.println(outputRow(helms.get(0)));
-        Armor a = processRow(outputRow(helms.get(0)));
-        System.out.println(a);
-        appendRow("data/MHR_EQUIP_CHARM.tsv", outputRow(helms.get(0)));
-        
-        List<Charm> charms = LoadCharmData("MHR_EQUIP_CHARM.tsv");
-        System.out.println(charms);
-        createFile("data/MHR_EQUIP_CHARM.tsv");
+//        System.out.println(outputRow(helms.get(0)));
+//        Armor a = processRow(outputRow(helms.get(0)));
+//        System.out.println(a);
+//        appendRow("data/MHR_EQUIP_CHARM.tsv", outputRow(helms.get(0)));
+//        
+//        List<Charm> charms = LoadCharmData("MHR_EQUIP_CHARM.tsv");
+//        System.out.println(charms);
+//        createFile("data/MHR_EQUIP_CHARM.tsv");
     }
 }

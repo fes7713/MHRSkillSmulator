@@ -226,6 +226,10 @@ public class Equipment implements Comparable<Equipment>{
                 .filter(AttackSkill.class::isInstance)
                 .filter(Skill::isActive)
                 .toList();
+        List<Skill> attackSkills = activeSkills
+                .stream()
+                .filter(AttackSkill.class::isInstance)
+                .toList();
         
         int availableSlots3 = decoratables.stream().map(deco -> deco.getSlot3()).reduce(0, (a, b) -> a + b);
         int availableSlots2 = decoratables.stream().map(deco -> deco.getSlot2()).reduce(0, (a, b) -> a + b);
@@ -293,16 +297,7 @@ public class Equipment implements Comparable<Equipment>{
             return false;
         
         
-        List<Skill> slot3Skills = activeSkills
-                .stream()
-                .filter(AttackSkill.class::isInstance)
-                .filter(skill -> skill.getCost() == 3)
-                .collect(Collectors.toList());
-        List<Skill> slot2Skills = activeSkills
-                .stream()
-                .filter(AttackSkill.class::isInstance)
-                .filter(skill -> skill.getCost() == 2)
-                .collect(Collectors.toList());
+        
         
 //        System.out.println("slot3Skills" + slot3Skills);
 //        System.out.println("slot2Skills" + slot2Skills);
@@ -317,10 +312,9 @@ public class Equipment implements Comparable<Equipment>{
                                 key -> key.getMax() - skills.get(key)
                         )
                 );
-        activeSkills
+        attackSkills
                 .stream()
                 .filter(skill -> !remainingSkills.containsKey(skill))
-                .filter(AttackSkill.class::isInstance)
                 .map(AttackSkill.class::cast)
                 .forEach(skill -> remainingSkills.put(skill, skill.getMax()));
         
@@ -332,14 +326,25 @@ public class Equipment implements Comparable<Equipment>{
                 .map(AttackSkill.class::cast)
                 .forEach(skill -> remainingSkills.put(skill, remainingSkills.get(skill) - requiredSkills.get(skill)));
         
+        remainingSkills.values().removeIf(v -> v == 0);
+        
+        List<Skill> slot3Skills = remainingSkills.keySet()
+                .stream()
+                .filter(skill -> skill.getCost() == 3)
+                .collect(Collectors.toList());
+        List<Skill> slot2Skills = remainingSkills.keySet()
+                .stream()
+                .filter(skill -> skill.getCost() == 2)
+                .collect(Collectors.toList());
+        
         int remainingSlot3SkillSum = remainingSkills
                 .entrySet()
                 .stream()
                 .filter(entry -> entry.getKey().getCost() == 3)
                 .map(Entry::getValue)
                 .reduce(0, Integer::sum);
-        if(slot3Skills.size() == 0 && remainingSlot3SkillSum != 0)
-            System.out.println("Heere");
+//        if(slot3Skills.size() == 0 && remainingSlot3SkillSum != 0)
+//            System.out.println("Heere");
         int remainingSlot2SkillSum = remainingSkills
                 .entrySet()
                 .stream()
@@ -351,7 +356,6 @@ public class Equipment implements Comparable<Equipment>{
         
 //        if(!slot2Skills.isEmpty())
 //        {
-            bestExpectation.set(0);
             bestDecorations.clear();
             skillLooper(
                     remainingSkills, 
@@ -402,8 +406,8 @@ public class Equipment implements Comparable<Equipment>{
             case 2:
                 skillKeys = slot2Skills;
                 // if available skill is zero then finish
-                if(remainingSlot2SkillSum == 0)
-                    return;
+//                if(remainingSlot2SkillSum == 0)
+//                    return;
                 
                 remainingSlotCount = remainingSlot3Count + remainingSlot2Count;
                 break;
@@ -557,6 +561,11 @@ public class Equipment implements Comparable<Equipment>{
                     .append("->")
                     .append(skillMap.get(skill));
         }
+        for(Armor a : armorList)
+        {
+            System.out.println(a);
+        }
+        
                 
         return sb.toString();
     }
