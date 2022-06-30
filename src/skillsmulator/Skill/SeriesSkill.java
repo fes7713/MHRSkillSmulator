@@ -8,15 +8,15 @@ package skillsmulator.Skill;
  *
  * @author fes77
  */
-public class UnknownSkill extends Skill{
+public class SeriesSkill extends Skill{
 
-    public UnknownSkill(String name, int cost) {
-        super(name, "UNKNOWN", cost, Integer.MAX_VALUE);
+    public SeriesSkill(String name, int maxLevel) {
+        super(name, "UNKNOWN", 2, maxLevel);
     }
     
-    public int getMax()
+    @Override
+    public void updateScore()
     {
-        return 5;
+        score = getRequired() * getCost() * getCost() * 3;
     }
-    
 }

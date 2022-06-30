@@ -11,7 +11,6 @@ import skillsmulator.Decoratable;
 import static skillsmulator.Simulator.attackBoost;
 import static skillsmulator.Simulator.criticalEye;
 import static skillsmulator.Simulator.peakPerformance;
-import skillsmulator.Skill.AttackSkill;
 import skillsmulator.Skill.Skill;
 
 /**
@@ -21,9 +20,9 @@ import skillsmulator.Skill.Skill;
 public abstract class Armor implements Comparable<Armor>, Decoratable{
     private final String title;
     protected final Map<Skill, Integer> skills;
-    private int slot1;
-    private int slot2;
-    private int slot3;
+    private final int slot1;
+    private final int slot2;
+    private final int slot3;
 
     private int score;
     
@@ -69,16 +68,17 @@ public abstract class Armor implements Comparable<Armor>, Decoratable{
     
     public void updateScore()
     {
-        score = slot1 * 1 + slot2 * 2 + slot3 * 3;
+        score = slot1 * 1 + slot2 * 4 + slot3 * 4;
         score += skills
                 .keySet()
                 .stream()
-                .filter(skill -> AttackSkill.class.isInstance(skill) || skill.getRequired() > 0)
+//                .filter(skill -> AttackSkill.class.isInstance(skill) || skill.getRequired() > 0)
                 .map(skill -> 
-                        skill.getCost() * 
-                        skills.get(skill) * 
-                        (skill.getRequired() > 0 ? skill.getRequired() * 2 : 1) * 
-                        (skill.getCost() >= 2 ? 2 : 1))
+                        skill.getScore()* 
+                        skills.get(skill) //* 
+//                        (skill.getRequired() > 0 ? skill.getRequired() * 2 : 1) * 
+//                        (skill.getCost() >= 2 ? 2 : 1)
+                )
                 .reduce(0, Integer::sum);
 
     }

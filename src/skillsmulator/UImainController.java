@@ -7,6 +7,7 @@ package skillsmulator;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -211,6 +212,8 @@ public class UImainController implements Initializable {
     XYChart.Series<Integer, Double> avgSeries;
     XYChart.Series<Integer, Double> worstSeries;
     XYChart.Series<Integer, Double> avgScoreSeries;
+    XYChart.Series<Integer, Integer> firstScoreSeries;
+    XYChart.Series<Integer, Integer> lastScoreSeries;
     
     @FXML
     private TableView<Charm> charmTable;
@@ -251,6 +254,10 @@ public class UImainController implements Initializable {
     private ComboBox<Skill> elementBox;
     @FXML
     private ComboBox<Integer> elementLevelBox;
+    @FXML
+    private ComboBox<Skill> serieseSkillBox;
+    @FXML
+    private ComboBox<Integer> serieseSkillLivelBox;
     
     @FXML
     private ProgressBar progressBar;
@@ -268,6 +275,9 @@ public class UImainController implements Initializable {
         avgSeries.getData().clear();
         worstSeries.getData().clear();
         avgScoreSeries.getData().clear();
+        firstScoreSeries.getData().clear();
+        lastScoreSeries.getData().clear();
+
         System.out.println("Updated");
         
         if(thread.isAlive())
@@ -289,8 +299,9 @@ public class UImainController implements Initializable {
             @Override
             public void run(){
                 sim.setActive(true);
-                int componentLimit = 4;
-                sim.run(weapon, componentLimit, (int)(componentLimit * 6 * 1.5), 50);
+                int componentLimit = 6;
+//                skipRateScoreSpinner.
+                sim.run(weapon, componentLimit, (int)(componentLimit * 6 * 1.5), 100);
                 
             }
         };
@@ -450,20 +461,47 @@ public class UImainController implements Initializable {
         avgSeries = new XYChart.Series();
         worstSeries = new XYChart.Series();
         avgScoreSeries = new XYChart.Series();
+        firstScoreSeries = new XYChart.Series();
+        lastScoreSeries = new XYChart.Series();
         
         bestSeries.setName("Best");
         avgSeries.setName("Average"); 
         worstSeries.setName("Worst");
         avgScoreSeries.setName("Average Score");
-        
+        firstScoreSeries.setName("First Score");
+        lastScoreSeries.setName("Last Score");
 
         chart.getData().add(bestSeries);
         chart.getData().add(avgSeries);
         chart.getData().add(worstSeries);
         chart.getData().add(avgScoreSeries);
+        chart.getData().add(firstScoreSeries);
+        chart.getData().add(lastScoreSeries);
+        
+        Simulator.ALL_SKILLS
+                .stream()
+                .forEach(skill -> skill.requiredProperty()
+                        .addListener(
+                                (observable) -> 
+                                {
+                                    skill.updateScore();
+                                }
+                        )
+                );
+        Simulator.ALL_ATTACK_SKILLS
+                .stream()
+                .forEach(skill -> skill.activeProperty()
+                        .addListener(
+                                
+                                (observable) -> 
+                                {
+                                    skill.updateScore();
+                                }
+                        )
+                );
         
         
-        
+        // Condition skill setting
         AttackBoostBox.selectedProperty().bindBidirectional(attackBoost.activeProperty());
         AgitatorBox.selectedProperty().bindBidirectional(agitator.activeProperty());
         CounterstrikeBox.selectedProperty().bindBidirectional(counterstrike.activeProperty());
@@ -598,6 +636,27 @@ public class UImainController implements Initializable {
             elementBox.getValue().setRequired(elementLevelBox.getValue());
         });
         
+        // Seriese skills
+        serieseSkillBox.getItems().add(Simulator.emptySkill);
+        Simulator.ALL_SERIESE_SKILLS.stream().forEach(serieseSkillBox.getItems()::add);
+        serieseSkillBox.setValue(serieseSkillBox.getItems().get(0));
+        serieseSkillBox.valueProperty().addListener((observable) -> {
+            serieseSkillLivelBox.getItems().clear();
+            serieseSkillBox.getItems().stream().forEach(skill -> skill.setRequired(0));
+            
+            if(serieseSkillBox.valueProperty().get() == Simulator.emptySkill)
+                serieseSkillLivelBox.getItems().add(0);
+            else
+            {
+                IntStream.rangeClosed(1, serieseSkillBox.getValue().getMax()).forEach(x -> serieseSkillLivelBox.getItems().add(x));
+            }
+            serieseSkillLivelBox.setValue(serieseSkillLivelBox.getItems().get(0));
+            serieseSkillBox.getValue().setRequired(serieseSkillLivelBox.getValue());
+        });
+        serieseSkillLivelBox.valueProperty().addListener((observable) -> {
+            serieseSkillBox.getValue().setRequired(serieseSkillLivelBox.getValue());
+        });
+        
         // Charm setting
         Simulator.ALL_SKILLS.stream().forEach(charmSkill1Box.getItems()::add);
         charmSkill1Box.setValue(charmSkill1Box.getItems().get(0));
@@ -667,6 +726,22 @@ public class UImainController implements Initializable {
                                         .sum() / (double)equipmentData.size()
                                 )
                         );
+                        firstScoreSeries.getData().add(
+                                new XYChart.Data<>(firstScoreSeries.getData().size(), 
+                                Collections.max(
+                                        equipmentData, 
+                                        (Equipment first, Equipment second) -> first.getScore() - second.getScore()
+                                ).getScore()
+                            )
+                        );
+                        lastScoreSeries.getData().add(
+                                new XYChart.Data<>(firstScoreSeries.getData().size(), 
+                                Collections.min(
+                                        equipmentData, 
+                                        (Equipment first, Equipment second) -> first.getScore() - second.getScore()
+                                ).getScore()
+                            )
+                        );
                     });
 
 //                    }
@@ -680,7 +755,7 @@ public class UImainController implements Initializable {
         sim.getProgressProperty().bindBidirectional(progressBar.progressProperty());
         sim.getSkipRateProperty().bindBidirectional(skipRateBar.progressProperty());
         SpinnerValueFactory<Integer> skipValueFactory = //
-                new SpinnerValueFactory.IntegerSpinnerValueFactory(-20, 100, 4 * 9); //(int)(componentLimit * 6 * 1.5)
+                new SpinnerValueFactory.IntegerSpinnerValueFactory(-20, 100, 55); //(int)(componentLimit * 6 * 1.5)
         skipRateScoreSpinner.setValueFactory(skipValueFactory);
         sim.getSkipValueProperty().bind(skipRateScoreSpinner.valueProperty());
         

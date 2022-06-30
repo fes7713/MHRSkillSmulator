@@ -27,6 +27,7 @@ import skillsmulator.Skill.DamageAffinityUpSkill;
 import skillsmulator.Skill.DamageMultiplierSkill;
 import skillsmulator.Skill.DamageUpMultiplePreSkill;
 import skillsmulator.Skill.DamageUpSkill;
+import skillsmulator.Skill.SeriesSkill;
 import skillsmulator.Skill.Skill;
 import skillsmulator.Skill.UnknownSkill;
 
@@ -142,7 +143,7 @@ public class Simulator {
     public static final Skill defenceBoost
             = new Skill("防御", "防御珠", 1, 5);
     public static final Skill criticalElement
-            = new Skill("会心撃【属性】", "属会珠", 1, 5);
+            = new Skill("会心撃【属性】", "属会珠", 1, 3);
     public static final Skill fireAttack
             = new Skill("火属性攻撃強化", "火炎珠", 1, 5);
     public static final Skill thunderAttack
@@ -158,10 +159,15 @@ public class Simulator {
     public static final Skill paralysisAttack
             = new Skill("麻痺属性強化", "麻痺珠", 1, 5);
     
+    public static final SeriesSkill kushalaBlessing
+            = new SeriesSkill("鋼殻の恩恵", 4);
+    public static final SeriesSkill teostraBlessing
+            = new SeriesSkill("炎鱗の恩恵", 4);
     
     
     public static final List<Skill> ALL_SKILLS = getAllSkills();
     public static final List<Skill> ALL_ATTACK_SKILLS = getAllAttackSkills();
+    public static final List<SeriesSkill> ALL_SERIESE_SKILLS = getALLSeriesSkills();
     
     public Simulator() {
         this(new ArrayList<>());
@@ -335,7 +341,13 @@ public class Simulator {
         progress.set(0);
         skipRate.set(0);
 //        skipValue.set(combinationScoreLimit);
-
+        helms.stream().forEach(Armor::updateScore);
+        chests.stream().forEach(Armor::updateScore);
+        arms.stream().forEach(Armor::updateScore);
+        waists.stream().forEach(Armor::updateScore);
+        legs.stream().forEach(Armor::updateScore);
+        charms.stream().forEach(Armor::updateScore);
+        
         select(helms, selectedHelms, componentScoreLimit);
         select(chests, selectedChests, componentScoreLimit);
         select(arms, selectedArms, componentScoreLimit);
@@ -350,7 +362,7 @@ public class Simulator {
         Collections.sort(selectedLegs, Comparator.reverseOrder());
         Collections.sort(selectedCharms, Comparator.reverseOrder());
         
-        List<Skill> activeSkills = getActiveSkills();
+//        List<Skill> activeSkills = getActiveSkills();
         
         int combinations = 
                 selectedHelms.size() *
@@ -375,7 +387,9 @@ public class Simulator {
                                     System.out.println("Exiting");
                                     return;
                                 }
+                                
                                 progress.set(progressCounter++/(double)combinations);
+                                
                                 Equipment e = new Equipment(
                                         weapon,
                                         selectedHelms.get(i),
@@ -387,19 +401,25 @@ public class Simulator {
 
                                 if(e.getScore() < skipValue.get())
                                 {
-                                    skipRate.set(skipCounter ++/(double)progressCounter);
+//                                    skipCounter += selectedCharms.size() - w;
+//                                    progressCounter += selectedCharms.size() - w - 1;
+//                                    skipRate.set(skipCounter/(double)progressCounter);
+//                                    break;
+                                    skipRate.set(skipCounter++/(double)progressCounter);
                                     continue;
                                 }
+                                
+                                
                                 
                                 if(e.updateBestDecoration()){
                                     if(equipments.size() < listSize)
                                     {
                                         pushExpectation(e);
-                                        if(e.getExpectation() == 0)
-                                        {
-                                            System.out.println("Zero");
-                                            e.updateBestDecoration();
-                                        }
+//                                        if(e.getExpectation() == 0)
+//                                        {
+//                                            System.out.println("Zero");
+//                                            e.updateBestDecoration();
+//                                        }
                                     }
                                     else{
                                         if(equipments.get(equipments.size() - 1).getExpectation() < e.getExpectation())
@@ -437,6 +457,7 @@ public class Simulator {
 //        chartCounter++;
 //        totalExpectation += e.getExpectation();
 //        totalScore += e.getScore();
+        
         equipments.add(e);
         Collections.sort(equipments, Comparator.reverseOrder());
         
@@ -460,9 +481,14 @@ public class Simulator {
 //        });
     }
     
-    private List<Skill> getActiveSkills() {
-        return ALL_SKILLS.stream().filter(Skill::isActive).toList();
+    public static List<SeriesSkill> getALLSeriesSkills()
+    {
+        return List.of(kushalaBlessing, teostraBlessing);
     }
+    
+//    private List<Skill> getActiveSkills() {
+//        return ALL_SKILLS.stream().filter(Skill::isActive).toList();
+//    }
     
     private static List<Skill> getAllSkills() {
         return List.of(emptySkill,
@@ -507,7 +533,9 @@ public class Simulator {
                 iceAttack,
                 dragonAttack,
                 blastAttack,
-                paralysisAttack);
+                paralysisAttack,
+                kushalaBlessing,
+                teostraBlessing);
     }
     
     public static List<Skill> getAllAttackSkills()

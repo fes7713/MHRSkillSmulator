@@ -37,25 +37,25 @@ import skillsmulator.Skill.Skill;
  * @author fes77
  */
 public class Equipment implements Comparable<Equipment>{
-    private Weapon weapon;
-    private Helm helm;
-    private Chest chest;
-    private Arm arm;
-    private Waist waist;
-    private Leg leg;
-    private Charm charm;
-    private List<Armor> armorList;
-    private List<Decoratable> decoratables;
+    private final Weapon weapon;
+    private final Helm helm;
+    private final Chest chest;
+    private final Arm arm;
+    private final Waist waist;
+    private final Leg leg;
+    private final Charm charm;
+    private final List<Armor> armorList;
+    private final List<Decoratable> decoratables;
     
     private int score;
 
-    private Map<Skill, Integer> skills;
+    private final Map<Skill, Integer> skills;
     private Map<Skill, Integer> requiredSkills;
     
     private Map<Skill, Integer> decorations;
-    private Map<Skill, Integer> bestDecorations;
+    private final Map<Skill, Integer> bestDecorations;
 //    private double bestExpectation;
-    private SimpleDoubleProperty bestExpectation;
+    private final SimpleDoubleProperty bestExpectation;
     boolean calculated;
     
     public Equipment(Weapon weapon, Helm helm, Chest chest, Arm arm, Waist waist, Leg leg, Charm charm){
@@ -221,23 +221,24 @@ public class Equipment implements Comparable<Equipment>{
         bestDecorations.clear();
         decorations.clear();
         
+        if(Simulator.ALL_SERIESE_SKILLS
+                .stream()
+                .anyMatch(skill -> skill.getRequired() != 0 && skills.getOrDefault(skill, 0) < skill.getRequired()))
+        {
+//            System.out.println("Skipping");
+            return false;
+        }
+        
         activeSkills = activeSkills
                 .stream()
                 .filter(AttackSkill.class::isInstance)
                 .filter(Skill::isActive)
                 .toList();
-        List<Skill> attackSkills = activeSkills
-                .stream()
-                .filter(AttackSkill.class::isInstance)
-                .toList();
         
         int availableSlots3 = decoratables.stream().map(deco -> deco.getSlot3()).reduce(0, (a, b) -> a + b);
         int availableSlots2 = decoratables.stream().map(deco -> deco.getSlot2()).reduce(0, (a, b) -> a + b);
         int availableSlots1 = decoratables.stream().map(deco -> deco.getSlot1()).reduce(0, (a, b) -> a + b);
-        
-//        System.out.println("avbailableSlots3 : " + availableSlots3);
-//        System.out.println("avbailableSlots2 : " + availableSlots2);
-//        System.out.println("avbailableSlots1 : " + availableSlots1);
+
         
         requiredSkills = Simulator.ALL_SKILLS
                 .stream()
@@ -297,11 +298,6 @@ public class Equipment implements Comparable<Equipment>{
             return false;
         
         
-        
-        
-//        System.out.println("slot3Skills" + slot3Skills);
-//        System.out.println("slot2Skills" + slot2Skills);
-        
         Map<AttackSkill, Integer> remainingSkills = skills.keySet()
                 .stream()
                 .filter(AttackSkill.class::isInstance)
@@ -312,7 +308,7 @@ public class Equipment implements Comparable<Equipment>{
                                 key -> key.getMax() - skills.get(key)
                         )
                 );
-        attackSkills
+        activeSkills
                 .stream()
                 .filter(skill -> !remainingSkills.containsKey(skill))
                 .map(AttackSkill.class::cast)

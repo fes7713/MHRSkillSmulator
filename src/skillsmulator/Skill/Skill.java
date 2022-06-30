@@ -17,6 +17,7 @@ public class Skill {
     private String decorationName;
     protected int maxLevel;
     private int cost;
+    protected int score;
 
     private SimpleIntegerProperty required;
     
@@ -30,8 +31,10 @@ public class Skill {
         this.maxLevel = maxLevel;
         this.cost = cost;
  
+        
         activeProperty = new SimpleBooleanProperty(true);
         required = new SimpleIntegerProperty(0);
+        updateScore();
     }
     
     public BooleanProperty activeProperty()
@@ -79,6 +82,7 @@ public class Skill {
     }
 
     public void setRequired(int required) {
+        updateScore();
         if(required <= 0)
             this.required.set(0);
         else if(required >= maxLevel)
@@ -90,5 +94,14 @@ public class Skill {
     public SimpleIntegerProperty requiredProperty()
     {
         return required;
+    }
+    
+    public int getScore()
+    {
+        return score;
+    }
+
+    public void updateScore() {
+        score = getRequired() * getCost() * (getCost() >= 2 ? 2 : 1);
     }
 }

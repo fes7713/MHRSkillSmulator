@@ -25,4 +25,10 @@ public abstract class AttackSkill extends Skill{
     }
     
     abstract protected void editExpectation(Expectation exp, int level);
+    
+    @Override
+    public void updateScore()
+    {
+        score = (getRequired() + 1) * getCost() * (getCost() >= 2 ? 2 : 1) * (isActive() ? 1 : 0);
+    }
 }
