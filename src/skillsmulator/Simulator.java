@@ -82,7 +82,7 @@ public class Simulator {
     public static final Skill weaknessExploit
             = new AffinitySkill("弱点特効", "痛撃珠", 2, new int[]{15, 30, 50});
     public static final Skill criticalDraw
-            = new AffinitySkill("抜刀術【技】", "抜刀珠", 3, new int[]{10, 20, 40});
+            = new AffinitySkill("抜刀術【技】", "抜刀珠", 3, new int[]{15, 30, 60});
     public static final Skill maximumMight
             = new AffinitySkill("渾身", "渾身珠", 2, new int[]{10, 20, 30});
     public static final Skill agitator
